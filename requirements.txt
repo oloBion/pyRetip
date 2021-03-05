@@ -1,0 +1,8 @@
+autogluon==0.1.0
+mordred==1.2.0
+numpy
+pandas
+pubchempy
+scipy
+sklearn
+xgboost
