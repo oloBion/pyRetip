@@ -7,4 +7,5 @@ pandas
 pubchempy
 scipy
 sklearn
+tqdm
 xgboost
