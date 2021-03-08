@@ -1,5 +1,6 @@
-import mordred
+import numpy as np
 import pandas as pd
+import tqdm
 
 from mordred import Calculator, descriptors
 from rdkit import Chem
@@ -22,6 +23,8 @@ class Dataset:
 
         # create mordred calculator
         self.calc = Calculator(descriptors, ignore_3D=True)
+        self.descriptor_names = [str(d) for d in self.calc.descriptors]
+
 
     def load_dataframe(self, filename):
         """
@@ -50,21 +53,51 @@ class Dataset:
     def load_structures(self):
         """
         """
+
     
     def calculate_descriptors(self):
         """
         """
-    
+
+        assert('SMILES' in self.df.columns)
+
+        descs = []
+
+        for smi in tqdm.tqdm(set(self.df.SMILES)):
+            try:
+                mol = Chem.MolFromSmiles(smi)
+
+                desc = self.calc(mol)
+                desc = desc.fill_missing()
+
+                desc = desc.asdict()
+                desc['SMILES'] = smi
+
+                descs.append(desc)
+            except:
+                print(f'Parsing SMILES {smi} failed')
+
+        descs = pd.DataFrame(descs)
+        self.df = pd.merge(self.df, descs, how='left', on='SMILES')
+
 
     def build_dataset(self):
         descriptor_names = [str(d) for d in self.calc.descriptors]
 
-        if not all(d in self.df.columns for d in descriptor_names):
+        if not all(d in self.df.columns for d in self.descriptor_names):
             self.calculate_descriptors()
         
-        data = self.df[[self.RT_COLUMN] + descriptor_names]
-        self.training_data, self.test_data = train_test_split(data, test_size=self.test_size, random_state=101)
+        data = self.df[[self.RT_COLUMN] + self.descriptor_names]
+        data = data.dropna(how='all', subset=self.descriptor_names)
+        data = data.dropna(how='any', axis=1)
+
+        self.training_data, self.test_data = train_test_split(data, test_size=self.test_size, random_state=self.seed)
     
+    def save_dataset(self, filename):
+        self.df.to_csv(filename, index=False)
+        print(f'Saved dataset to {filename}')
+
+
     def get_training_data(self):
         if not self.data:
             self.build_dataset()
