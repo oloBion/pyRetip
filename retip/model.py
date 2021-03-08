@@ -5,16 +5,13 @@ import scipy.stats as st
 import xgboost as xgb
 import time
 
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn import metrics
 from sklearn.model_selection import GridSearchCV
 
 from retip import Dataset
 
 
 class Trainer:
-    def __init__(self):
-        pass
-
     @abc.abstractmethod
     def train(self):
         pass
@@ -29,8 +26,10 @@ class Trainer:
 
 
 class XGBoostTrainer(Trainer):
-    def __init__(self, dataset: Dataset):
+    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = 4):
         self.dataset = dataset
+        self.cv = cv
+        self.n_cpu = n_cpu
 
         self.parameter_space = {
             'n_estimators': [300, 400, 500, 600, 700, 800, 1000],
@@ -50,19 +49,16 @@ class XGBoostTrainer(Trainer):
         t = time.time()
 
         self.model = GridSearchCV(
-            xgb.XGBRegressor(n_jobs=8),
+            xgb.XGBRegressor(n_jobs=self.n_cpu),
             self.parameter_space,
-            cv=10,
+            cv=self.cv,
             verbose=1,
             n_jobs=1
         ).fit(X_train, y_train)
 
-        print('Completed in', str(datetime.timedelta(seconds=time.time() - t)))
-        print(self.model.best_score_)
-        print(self.model.best_params_)
-        print()
+        elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
+        print(f'Training completed in {elapsed_time} with best RMSE {self.model.best_score_:.3f}')
 
-    
     def score(self, X=None, y=None):
         if not X or not y:
             test_data = self.dataset.get_test_data()
@@ -73,7 +69,16 @@ class XGBoostTrainer(Trainer):
         y_pred = self.model.predict(X)
         rt_error = y - y_pred
 
-        print('RMSE:', mean_squared_error(y, y_pred, squared=False))
-        print('R^2:', r2_score(y, y_pred))
-        print('MAE', mean_absolute_error(y, y_pred))
-        print('95% CI:', st.norm.ppf(0.95, loc=np.mean(rt_error), scale=np.std(rt_error)))
+        return {
+            'root_mean_squared_error': metrics.mean_squared_error(y, y_pred, squared=True),
+            'mean_absolute_error': metrics.mean_absolute_error(y, y_pred),
+            'explained_variance_score': metrics.explained_variance_score(y, y_pred),
+            'r2_score': metrics.r2_score(y, y_pred),
+            'pearson_correlation': st.pearsonr(y, y_pred),
+            'mean_squared_error': metrics.mean_squared_error(y, y_pred),
+            'median_absolute_error': metrics.median_absolute_error(y, y_pred),
+            '95_percent_confidence_interval': st.norm.ppf(0.95, loc=np.mean(rt_error), scale=np.std(rt_error))
+        }
+
+    def predict(self, X):
+        return self.model.predict(X)
