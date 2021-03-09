@@ -61,6 +61,9 @@ class Dataset:
 
         assert('SMILES' in self.df.columns)
 
+        if all(d in self.df.columns for d in self.descriptor_names):
+            print('Skipping molecular descriptor calculation, descriptors have already been calculated')
+
         descs = []
 
         for smi in tqdm.tqdm(set(self.df.SMILES)):
