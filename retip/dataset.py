@@ -97,7 +97,14 @@ class Dataset:
         self.training_data, self.test_data = train_test_split(data, test_size=self.test_size, random_state=self.seed)
     
     def save_dataset(self, filename):
-        self.df.to_csv(filename, index=False)
+        if filename.lower().endswith('.csv'):
+            self.df.to_csv(filename, index=False)
+        elif filename.lower().endswith('.xlsx'):
+            self.df.to_excel(filename, index=False)
+        else:
+            extension = filename.split('.')[-1]
+            raise Exception(f'{extension} is not a supported data format')
+
         print(f'Saved dataset to {filename}')
 
 
