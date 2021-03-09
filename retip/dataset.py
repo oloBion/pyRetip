@@ -63,6 +63,7 @@ class Dataset:
 
         if all(d in self.df.columns for d in self.descriptor_names):
             print('Skipping molecular descriptor calculation, descriptors have already been calculated')
+            return
 
         descs = []
 
@@ -90,11 +91,11 @@ class Dataset:
         if not all(d in self.df.columns for d in self.descriptor_names):
             self.calculate_descriptors()
         
-        data = self.df[[self.RT_COLUMN] + self.descriptor_names]
-        data = data.dropna(how='all', subset=self.descriptor_names)
-        data = data.dropna(how='any', axis=1)
+        self.data = self.df[[self.RT_COLUMN] + self.descriptor_names]
+        self.data = self.data.dropna(how='all', subset=self.descriptor_names)
+        self.data = self.data.dropna(how='any', axis=1)
 
-        self.training_data, self.test_data = train_test_split(data, test_size=self.test_size, random_state=self.seed)
+        self.training_data, self.test_data = train_test_split(self.data, test_size=self.test_size, random_state=self.seed)
     
     def save_dataset(self, filename):
         if filename.lower().endswith('.csv'):
@@ -107,6 +108,12 @@ class Dataset:
 
         print(f'Saved dataset to {filename}')
 
+
+    def get_data(self):
+        if not self.data:
+            self.build_dataset()
+
+        return self.data
 
     def get_training_data(self):
         if not self.data:
