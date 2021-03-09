@@ -33,7 +33,7 @@ class Dataset:
         # load data frame
         if filename.lower().endswith('.csv'):
             self.df = pd.read_csv(filename)
-        elif filename.lower().endswith('.xlsx'):
+        elif filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
             self.df = pd.read_excel(filename)
         else:
             extension = filename.split('.')[-1]
@@ -99,7 +99,7 @@ class Dataset:
     def save_dataset(self, filename):
         if filename.lower().endswith('.csv'):
             self.df.to_csv(filename, index=False)
-        elif filename.lower().endswith('.xlsx'):
+        elif filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
             self.df.to_excel(filename, index=False)
         else:
             extension = filename.split('.')[-1]
