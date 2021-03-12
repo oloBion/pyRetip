@@ -1,6 +1,7 @@
 import abc
 import datetime
 import numpy as np
+import pandas as pd
 import scipy.stats as st
 import xgboost as xgb
 import time
@@ -20,8 +21,18 @@ class Trainer:
     def score(self, X_test=None, y_test=None):
         pass
 
-    def predict(self, X):
-        return self.model.predict(X)
+    def predict(self, data):
+        if isinstance(data, Dataset):
+            X = data.get_data()
+            y_pred = self.model.predict(X)
+            y_series = pd.Series(y_pred, index=X.index)
+
+            rt_col_idx = data.df.columns.get_loc(Dataset.RT_COLUMN)
+            data.df(rt_col_idx + 1, 'RTP', y_series)
+        elif isinstance(data, pd.DataFrame):
+            return self.model.predict(data)
+        else:
+            print(f'Unsupported data format {type(data)}')
 
 
 class XGBoostTrainer(Trainer):
