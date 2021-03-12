@@ -50,7 +50,7 @@ class Trainer:
 
 
 class XGBoostTrainer(Trainer):
-    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = 4):
+    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = None):
         self.dataset = dataset
         self.cv = cv
         self.n_cpu = n_cpu
@@ -84,32 +84,24 @@ class XGBoostTrainer(Trainer):
         print(f'Training completed in {elapsed_time} with best RMSE {self.model.best_score_:.3f}')
 
     def score(self, X=None, y=None):
-        if not X or not y:
+        if X is None or y is None:
             test_data = self.dataset.get_test_data()
             X = test_data.drop('RT', axis=1)
             y = test_data.RT.values
         
 
         y_pred = self.predict(X)
-        rt_error = y - y_pred
-
-        return {
-            'root_mean_squared_error': metrics.mean_squared_error(y, y_pred, squared=True),
-            'mean_absolute_error': metrics.mean_absolute_error(y, y_pred),
-            'explained_variance_score': metrics.explained_variance_score(y, y_pred),
-            'r2_score': metrics.r2_score(y, y_pred),
-            'pearson_correlation': st.pearsonr(y, y_pred),
-            'mean_squared_error': metrics.mean_squared_error(y, y_pred),
-            'median_absolute_error': metrics.median_absolute_error(y, y_pred),
-            '95_percent_confidence_interval': st.norm.ppf(0.95, loc=np.mean(rt_error), scale=np.std(rt_error))
-        }
+        return calculate_accuracy_statistics(y, y_pred)
 
 
 class AutoGluonTrainer(Trainer):
-    def __init__(self, dataset: Dataset, training_duration: int = 60, n_cpu: int = 4):
+    def __init__(self, dataset: Dataset, training_duration: int = 60, n_cpu: int = None,
+                 preset: str = 'good_quality_faster_inference_only_refit'):
+
         self.dataset = dataset
         self.training_duration = training_duration
         self.n_cpu = n_cpu
+        self.preset = preset
 
         self.model = TabularPredictor(label=Dataset.RT_COLUMN)
 
@@ -117,9 +109,9 @@ class AutoGluonTrainer(Trainer):
         t = time.time()
 
         self.model.fit(
-            train_data=self.dataset.get_training_data(),
+            train_data=data,
             time_limit=60 * self.minutes,
-            preset='good_quality_faster_inference_only_refit',
+            preset=self.preset,
             num_cpus=self.n_cpu
         )
 
