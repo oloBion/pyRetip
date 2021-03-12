@@ -50,11 +50,12 @@ class Dataset:
             valid_columns = ', '.join(self.IDENTIFIER_COLUMNS)
             raise Exception(f'No identifier columns were not found in the data frame: {valid_columns}')
 
+
     def load_structures(self):
         """
         """
 
-    
+
     def calculate_descriptors(self):
         """
         """
@@ -110,19 +111,19 @@ class Dataset:
 
 
     def get_data(self):
-        if not self.data:
+        if self.data is None:
             self.build_dataset()
 
         return self.data
 
     def get_training_data(self):
-        if not self.data:
+        if self.data is None:
             self.build_dataset()
         
         return self.training_data
     
     def get_test_data(self):
-        if not self.data:
+        if self.data is None:
             self.build_dataset()
         
         return self.test_data
