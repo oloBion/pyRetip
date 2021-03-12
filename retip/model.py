@@ -67,8 +67,10 @@ class XGBoostTrainer(Trainer):
 
     def train(self):
         training_data = self.dataset.get_training_data()
-        X_train = training_data.drop('RT', axis=1)
-        y_train = training_data.RT.values
+        X_train = training_data.drop(Dataset.RT_COLUMN, axis=1)
+        y_train = training_data[Dataset.RT_COLUMN].values
+
+        self.model_columns = X_train.columns
 
         t = time.time()
 
@@ -86,9 +88,8 @@ class XGBoostTrainer(Trainer):
     def score(self, X=None, y=None):
         if X is None or y is None:
             test_data = self.dataset.get_test_data()
-            X = test_data.drop('RT', axis=1)
-            y = test_data.RT.values
-        
+            X = test_data.drop(Dataset.RT_COLUMN, axis=1)
+            y = test_data[Dataset.RT_COLUMN].values
 
         y_pred = self.predict(X)
         return calculate_accuracy_statistics(y, y_pred)
@@ -108,8 +109,11 @@ class AutoGluonTrainer(Trainer):
     def train(self):
         t = time.time()
 
+        training_data = self.dataset.get_training_data()
+        self.model_columns = list(training_data.drop(Dataset.RT_Column, axis=1).columns)
+
         self.model.fit(
-            train_data=data,
+            train_data=training_data,
             time_limit=60 * self.minutes,
             preset=self.preset,
             num_cpus=self.n_cpu
