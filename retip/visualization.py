@@ -11,6 +11,7 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, output_filename: 
 
     from bokeh.models import Slope
     from bokeh.plotting import figure
+    from bokeh.io import export_png
 
     if not output_filename:
         # view the plot in a Jupyter notebook
@@ -57,7 +58,11 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, output_filename: 
 
     p.legend.location = "top_left"
 
-    if not output_filename:
+    if output_filename:
+        if not output_filename.lower().endswith('.png'):
+            output_filename += '.png'
+        export_png()
+    else:
         show(p)
 
     # return outliers
