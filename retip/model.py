@@ -130,7 +130,7 @@ class AutoGluonTrainer(Trainer):
             'mean_absolute_error': metrics.mean_absolute_error(y, y_pred),
             'explained_variance_score': metrics.explained_variance_score(y, y_pred),
             'r2_score': metrics.r2_score(y, y_pred),
-            'pearson_correlation': st.pearsonr(y, y_pred),
+            'pearson_correlation': st.pearsonr(y, y_pred)[0],
             'mean_squared_error': metrics.mean_squared_error(y, y_pred),
             'median_absolute_error': metrics.median_absolute_error(y, y_pred),
             '95_percent_confidence_interval': st.norm.ppf(0.95, loc=np.mean(rt_error), scale=np.std(rt_error))
