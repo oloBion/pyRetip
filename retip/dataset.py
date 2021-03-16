@@ -67,8 +67,11 @@ class Dataset:
             return
 
         descs = []
+        smiles = set(self.df.SMILES)
 
-        for smi in tqdm.tqdm(set(self.df.SMILES)):
+        print(f'Calculating descriptors for {len(smiles)} structures')
+
+        for smi in tqdm.tqdm(smiles):
             try:
                 mol = Chem.MolFromSmiles(smi)
 
