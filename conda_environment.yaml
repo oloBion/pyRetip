@@ -1,0 +1,19 @@
+name: retip_test
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - numpy
+  - scipy
+  - pandas
+  - openpyxl
+  - scikit-learn
+  - xgboost
+  - jupyterlab
+  - rdkit
+  - mordred=1.2.0
+  - pubchempy
+  - tqdm
+  - pip
+  - pip:
+    - autogluon==0.1.0
