@@ -99,7 +99,10 @@ class Dataset:
         self.data = self.data.dropna(how='all', subset=self.descriptor_names)
         self.data = self.data.dropna(how='any', axis=1)
 
-        self.training_data, self.test_data = train_test_split(self.data, test_size=self.test_size, random_state=self.seed)
+        if self.test_size > 0:
+            self.training_data, self.test_data = train_test_split(self.data, test_size=self.test_size, random_state=self.seed)
+        else:
+            self.training_data, self.test_data = self.data, self.data.loc[[]]
     
     def save_dataset(self, filename):
         if filename.lower().endswith('.csv'):
