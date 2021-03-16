@@ -13,9 +13,9 @@ class Dataset:
     RT_COLUMN = 'RT'
     IDENTIFIER_COLUMNS = ['PubChem CID', 'SMILES']
 
-    def __init__(self, filename, test_size: float = 0.2, seed: int = None):
+    def __init__(self, filename, test_size: float = 0.2, seed: int = None, sheet_name: str = None):
         # load and validate data set
-        self.load_dataframe(filename)
+        self.load_dataframe(filename, sheet_name)
 
         self.seed = seed
         self.test_size = test_size
@@ -26,7 +26,7 @@ class Dataset:
         self.descriptor_names = [str(d) for d in self.calc.descriptors]
 
 
-    def load_dataframe(self, filename):
+    def load_dataframe(self, filename: str, sheet_name: str = None):
         """
         """
 
@@ -34,7 +34,7 @@ class Dataset:
         if filename.lower().endswith('.csv'):
             self.df = pd.read_csv(filename)
         elif filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-            self.df = pd.read_excel(filename)
+            self.df = pd.read_excel(filename, sheet_name=sheet_name)
         else:
             extension = filename.split('.')[-1]
             raise Exception(f'{extension} is not a supported data format')
