@@ -22,23 +22,31 @@ class Trainer:
         pass
 
     @abc.abstractmethod
-    def score(self, X_test=None, y_test=None):
+    def train(self):
         pass
 
     def predict(self, data):
         if isinstance(data, Dataset):
             X = data.get_data()
-            y_pred = self.model.predict(X)
-            y_series = pd.Series(y_pred, index=X.index)
-
-            rt_col_idx = data.df.columns.get_loc(Dataset.RT_COLUMN)
-            data.df(rt_col_idx + 1, 'RTP', y_series)
+            return self.model.predict(X[self.model_columns])
         elif isinstance(data, pd.DataFrame):
-            return self.model.predict(data)
+            return self.model.predict(data[self.model_columns])
         else:
             print(f'Unsupported data format {type(data)}')
 
-    def calculate_accuracy_statistics(self, y, y_pred):
+    def score(self, data=None):
+        if data is None:
+            data = self.dataset.get_test_data()
+        elif isinstance(data, Dataset):
+            data = data.get_data()
+        elif isinstance(data, pd.DataFrame):
+            pass
+        else:
+            print(f'Unsupported data format {type(data)}')
+            return
+
+        y = data[Dataset.RT_COLUMN].values
+        y_pred = self.predict(data)
         rt_error = y - y_pred
 
         return {
@@ -51,6 +59,25 @@ class Trainer:
             'median_absolute_error': metrics.median_absolute_error(y, y_pred),
             '95_percent_confidence_interval': st.norm.ppf(0.95, loc=np.mean(rt_error), scale=np.std(rt_error))
         }
+
+    def annotate(self, data):
+        if isinstance(data, Dataset):
+            X = data.get_data()
+            y_pred = self.model.predict(X[self.model_columns])
+            y_series = pd.Series(y_pred, index=X.index)
+
+            if Dataset.RT_COLUMN in data.df.columns:
+                idx = data.df.columns.get_loc(Dataset.RT_COLUMN)
+            else:
+                idx = data.df.columns.get_loc('SMILES')
+
+            data.df.insert(idx + 1, 'RTP', y_series)
+        elif isinstance(data, pd.DataFrame):
+            y_pred = self.model.predict(data[self.model_columns])
+            data.insert(0, 'RTP', y_pred)
+        else:
+            print(f'Unsupported data format {type(data)}')
+
 
 
 class XGBoostTrainer(Trainer):
@@ -89,15 +116,6 @@ class XGBoostTrainer(Trainer):
         elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
         print(f'Training completed in {elapsed_time} with best RMSE {self.model.best_score_:.3f}')
 
-    def score(self, X=None, y=None):
-        if X is None or y is None:
-            test_data = self.dataset.get_test_data()
-            X = test_data.drop(Dataset.RT_COLUMN, axis=1)
-            y = test_data[Dataset.RT_COLUMN].values
-
-        y_pred = self.predict(X)
-        return calculate_accuracy_statistics(y, y_pred)
-
 
 class AutoGluonTrainer(Trainer):
     def __init__(self, dataset: Dataset, training_duration: int = 60, n_cpu: int = None,
@@ -129,12 +147,3 @@ class AutoGluonTrainer(Trainer):
         best_score = fit_summary['leaderboard'].loc[0, 'score']
 
         print(f'Training completed in {elapsed_time} with best RMSE {best_score:.3f}')
-
-    def score(self, X=None, y=None):
-        if not X or not y:
-            test_data = self.dataset.get_test_data()
-            X = test_data.drop('RT', axis=1)
-            y = test_data.RT.values
-
-        y_pred = self.predict(X)
-        return calculate_accuracy_statistics(y, y_pred)
