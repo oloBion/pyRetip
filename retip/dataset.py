@@ -90,8 +90,6 @@ class Dataset:
 
 
     def build_dataset(self):
-        descriptor_names = [str(d) for d in self.calc.descriptors]
-
         if not all(d in self.df.columns for d in self.descriptor_names):
             self.calculate_descriptors()
         
