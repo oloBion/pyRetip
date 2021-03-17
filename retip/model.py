@@ -6,6 +6,8 @@ import scipy.stats as st
 import xgboost as xgb
 import time
 
+from autogluon.tabular import TabularPredictor
+
 from sklearn import metrics
 from sklearn.model_selection import GridSearchCV
 
@@ -134,12 +136,11 @@ class XGBoostTrainer(Trainer):
 
 
 class AutoGluonTrainer(Trainer):
-    def __init__(self, dataset: Dataset, training_duration: int = 60, n_cpu: int = None,
+    def __init__(self, dataset: Dataset, training_duration: int = 60,
                  preset: str = 'good_quality_faster_inference_only_refit'):
 
         self.dataset = dataset
         self.training_duration = training_duration
-        self.n_cpu = n_cpu
         self.preset = preset
 
         self.model = TabularPredictor(label=Dataset.RT_COLUMN)
@@ -148,13 +149,12 @@ class AutoGluonTrainer(Trainer):
         t = time.time()
 
         training_data = self.dataset.get_training_data()
-        self.model_columns = list(training_data.drop(Dataset.RT_Column, axis=1).columns)
+        self.model_columns = list(training_data.drop(Dataset.RT_COLUMN, axis=1).columns)
 
         self.model.fit(
             train_data=training_data,
-            time_limit=60 * self.minutes,
-            preset=self.preset,
-            num_cpus=self.n_cpu
+            time_limit=60 * self.training_duration,
+            presets=self.preset
         )
 
         elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
