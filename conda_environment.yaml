@@ -17,3 +17,4 @@ dependencies:
   - pip
   - pip:
     - autogluon==0.1.0
+    - mxnet<2.0.0
