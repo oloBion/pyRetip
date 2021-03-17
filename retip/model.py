@@ -63,6 +63,11 @@ class Trainer:
     def annotate(self, data):
         if isinstance(data, Dataset):
             X = data.get_data()
+
+            if 'RTP' in X.columns:
+                print('RTP column already exists!')
+                return
+
             y_pred = self.model.predict(X[self.model_columns])
             y_series = pd.Series(y_pred, index=X.index)
 
@@ -73,11 +78,22 @@ class Trainer:
 
             data.df.insert(idx + 1, 'RTP', y_series)
         elif isinstance(data, pd.DataFrame):
+            if 'RTP' in data.columns:
+                print('RTP column already exists!')
+                return
+
             y_pred = self.model.predict(data[self.model_columns])
-            data.insert(0, 'RTP', y_pred)
+
+            if Dataset.RT_COLUMN in data.columns:
+                idx = data.df.columns.get_loc(Dataset.RT_COLUMN)
+            elif 'SMILES' in data.columns:
+                idx = data.df.columns.get_loc('SMILES')
+            else:
+                idx = 0
+
+            data.insert(idx + 1, 'RTP', y_pred)
         else:
             print(f'Unsupported data format {type(data)}')
-
 
 
 class XGBoostTrainer(Trainer):
