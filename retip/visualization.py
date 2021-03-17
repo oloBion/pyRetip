@@ -5,7 +5,7 @@ import scipy.stats as st
 from retip import Dataset, Trainer
 
 
-def outlier_identification(trainer: Trainer, dataset: Dataset, confidence_interval: 90, output_filename: str = None):
+def outlier_identification(trainer: Trainer, dataset: Dataset, confidence_interval: float = 90, output_filename: str = None):
     """
     """
 
