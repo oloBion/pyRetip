@@ -14,7 +14,11 @@ from retip import Dataset
 
 class Trainer:
     @abc.abstractmethod
-    def train(self):
+    def save_model(self):
+        pass
+
+    @abc.abstractmethod
+    def load_model(self):
         pass
 
     @abc.abstractmethod
