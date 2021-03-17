@@ -5,7 +5,7 @@ import scipy.stats as st
 from retip import Dataset, Trainer
 
 
-def outlier_identification(trainer: Trainer, dataset: Dataset, output_filename: str = None):
+def outlier_identification(trainer: Trainer, dataset: Dataset, confidence_interval: 90, output_filename: str = None):
     """
     """
 
@@ -27,7 +27,7 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, output_filename: 
     rt_error = y - y_pred
 
     # calculate CI and linear fit
-    ci = st.norm.ppf(0.95, loc=np.mean(rt_error), scale=np.std(rt_error))
+    ci = st.norm.ppf(confidence_interval / 100, loc=np.mean(rt_error), scale=np.std(rt_error))
     slope, intercept = par = np.polyfit(y, y_pred, 1)
 
     # find outliers
