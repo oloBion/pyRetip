@@ -1,4 +1,4 @@
-name: retip_test
+name: retip
 channels:
   - conda-forge
 dependencies:
