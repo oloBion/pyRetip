@@ -102,11 +102,16 @@ class Dataset:
         else:
             self.training_data, self.test_data = self.data, self.data.loc[[]]
     
-    def save_dataset(self, filename):
+    def save_dataset(self, filename: str, include_descriptors: bool = True):
+        if include_descriptors:
+            output = self.df
+        else:
+            output = self.df[self.df.columns.difference(self.descriptor_names)]
+
         if filename.lower().endswith('.csv'):
-            self.df.to_csv(filename, index=False)
+            output.to_csv(filename, index=False)
         elif filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-            self.df.to_excel(filename, index=False)
+            output.to_excel(filename, index=False)
         else:
             extension = filename.split('.')[-1]
             raise Exception(f'{extension} is not a supported data format')
