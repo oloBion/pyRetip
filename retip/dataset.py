@@ -50,6 +50,19 @@ class Dataset:
             valid_columns = ', '.join(self.IDENTIFIER_COLUMNS)
             raise Exception(f'No identifier columns were not found in the data frame: {valid_columns}')
 
+    def head(self):
+        """
+        """
+
+        return self.df.head()
+
+    def describe():
+        """
+        """
+
+        print('Shape:', self.df.shape)
+        print(self.df[self.df.columns.difference(self.descriptor_names)].describe())
+
 
     def load_structures(self):
         """
