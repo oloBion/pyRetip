@@ -1,5 +1,6 @@
 import abc
 import datetime
+import joblib
 import numpy as np
 import pandas as pd
 import scipy.stats as st
@@ -16,11 +17,11 @@ from retip import Dataset
 
 class Trainer:
     @abc.abstractmethod
-    def save_model(self):
+    def save_model(self, filename: str):
         pass
 
     @abc.abstractmethod
-    def load_model(self):
+    def load_model(self, filename: str):
         pass
 
     @abc.abstractmethod
@@ -114,6 +115,30 @@ class XGBoostTrainer(Trainer):
             'min_child_weight': [10]
         }
 
+
+    def save_model(self, filename: str):
+        if hasattr(self, 'model'):
+            export = {
+                'model_name': 'XGBoost',
+                'model_columns': self.model_columns,
+                'model': clf.best_estimator_
+            }
+
+            joblib.dump(export, filename)
+            print(f'Exported model to {filename}')
+        else:
+            raise Exception('Model has not been trained!')
+
+    def load_model(self, filename: str):
+        export = joblib.load(filename)
+
+        if isinstance(export, dict) and export.get('model_name') == 'XGBoost':
+            self.model_columns = export['model_columns']
+            self.model = export['model']
+        else:
+            raise Exception(f'{filename} is an invalid XGBoost model export')
+
+
     def train(self):
         training_data = self.dataset.get_training_data()
         X_train = training_data.drop(Dataset.RT_COLUMN, axis=1)
@@ -143,7 +168,19 @@ class AutoGluonTrainer(Trainer):
         self.training_duration = training_duration
         self.preset = preset
 
-        self.model = TabularPredictor(label=Dataset.RT_COLUMN)
+
+    def save_model(self, filename: str):
+        if hasattr(self, 'model'):
+            model_dir = self.model._learner.path
+            shutil.move(model_dir, filename)
+
+            print(f'Moved AutoGluon model to {filename}')
+        else:
+            raise Exception('Model has not been trained!')
+
+    def load_model(self, filename: str):
+        self.model = TabularPredictor.load(filename)
+
 
     def train(self):
         t = time.time()
@@ -151,6 +188,7 @@ class AutoGluonTrainer(Trainer):
         training_data = self.dataset.get_training_data()
         self.model_columns = list(training_data.drop(Dataset.RT_COLUMN, axis=1).columns)
 
+        self.model = TabularPredictor(label=Dataset.RT_COLUMN)
         self.model.fit(
             train_data=training_data,
             time_limit=60 * self.training_duration,
