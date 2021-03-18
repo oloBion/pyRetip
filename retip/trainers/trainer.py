@@ -28,18 +28,20 @@ class Trainer:
         elif isinstance(data, pd.DataFrame):
             return self.model.predict(data[self.model_columns])
         else:
-            print(f'Unsupported data format {type(data)}')
+            raise Exception(f'Unsupported data format {type(data)}')
 
     def score(self, data=None):
         if data is None:
-            data = self.dataset.get_test_data()
+            if self.dataset is not None:
+                data = self.dataset.get_test_data()
+            else:
+                raise Exception('Trainer has no associated dataset and so it must be provided to the score method')
         elif isinstance(data, Dataset):
             data = data.get_data()
         elif isinstance(data, pd.DataFrame):
             pass
         else:
-            print(f'Unsupported data format {type(data)}')
-            return
+            raise Exception(f'Unsupported data format {type(data)}')
 
         y = data[Dataset.RT_COLUMN].values
         y_pred = self.predict(data)
@@ -61,7 +63,7 @@ class Trainer:
             X = data.get_data()
 
             if 'RTP' in X.columns:
-                print('RTP column already exists!')
+                raise Exception('RTP column already exists!')
                 return
 
             y_pred = self.model.predict(X[self.model_columns])
@@ -75,7 +77,7 @@ class Trainer:
             data.df.insert(idx + 1, 'RTP', y_series)
         elif isinstance(data, pd.DataFrame):
             if 'RTP' in data.columns:
-                print('RTP column already exists!')
+                raise Exception('RTP column already exists!')
                 return
 
             y_pred = self.model.predict(data[self.model_columns])
@@ -89,4 +91,4 @@ class Trainer:
 
             data.insert(idx + 1, 'RTP', y_pred)
         else:
-            print(f'Unsupported data format {type(data)}')
+            raise Exception(f'Unsupported data format {type(data)}')

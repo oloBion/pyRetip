@@ -1,5 +1,7 @@
 import datetime
 import joblib
+import xgboost as xgb
+import time
 
 from sklearn.model_selection import GridSearchCV
 
@@ -8,7 +10,7 @@ from retip import Dataset, Trainer
 
 
 class XGBoostTrainer(Trainer):
-    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = None):
+    def __init__(self, dataset: Dataset = None, cv: int = 10, n_cpu: int = None):
         self.dataset = dataset
         self.cv = cv
         self.n_cpu = n_cpu
@@ -29,7 +31,7 @@ class XGBoostTrainer(Trainer):
             export = {
                 'model_name': 'XGBoost',
                 'model_columns': self.model_columns,
-                'model': clf.best_estimator_
+                'model': self.model.best_estimator_
             }
 
             joblib.dump(export, filename)
@@ -48,21 +50,24 @@ class XGBoostTrainer(Trainer):
 
 
     def train(self):
-        training_data = self.dataset.get_training_data()
-        X_train = training_data.drop(Dataset.RT_COLUMN, axis=1)
-        y_train = training_data[Dataset.RT_COLUMN].values
+        if self.dataset is not None:
+            training_data = self.dataset.get_training_data()
+            X_train = training_data.drop(Dataset.RT_COLUMN, axis=1)
+            y_train = training_data[Dataset.RT_COLUMN].values
 
-        self.model_columns = X_train.columns
+            self.model_columns = X_train.columns
 
-        t = time.time()
+            t = time.time()
 
-        self.model = GridSearchCV(
-            xgb.XGBRegressor(n_jobs=self.n_cpu),
-            self.parameter_space,
-            cv=self.cv,
-            verbose=1,
-            n_jobs=1
-        ).fit(X_train, y_train)
+            self.model = GridSearchCV(
+                xgb.XGBRegressor(n_jobs=self.n_cpu),
+                self.parameter_space,
+                cv=self.cv,
+                verbose=1,
+                n_jobs=1
+            ).fit(X_train, y_train)
 
-        elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
-        print(f'Training completed in {elapsed_time} with best RMSE {self.model.best_score_:.3f}')
+            elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
+            print(f'Training completed in {elapsed_time} with best RMSE {self.model.best_score_:.3f}')
+        else:
+            raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
