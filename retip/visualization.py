@@ -2,16 +2,40 @@ import numpy as np
 import pandas as pd
 import scipy.stats as st
 
-from retip import Dataset, Trainer
+from bokeh.models import Slope
+from bokeh.plotting import figure
+from bokeh.io import export_png
+
+import retip
 
 
-def outlier_identification(trainer: Trainer, dataset: Dataset, confidence_interval: float = 90, output_filename: str = None):
+def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
+    if not output_filename:
+        # view the plot in a Jupyter notebook
+        from bokeh.io import output_notebook, show
+        output_notebook()
+
+    # calculate linear fit
+    slope, intercept = par = np.polyfit(rt, rt_pred, 1)
+
+    p = figure()
+    p.xaxis.axis_label = 'Library RT'
+    p.yaxis.axis_label = 'Predicted RT'
+    p.scatter(rt, rt_pred, size=3)
+
+    p.add_layout(Slope(gradient=slope, y_intercept=intercept, line_color='blue'))
+
+    if output_filename:
+        if not output_filename.lower().endswith('.png'):
+            output_filename += '.png'
+        export_png()
+    else:
+        show(p)
+
+
+def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confidence_interval: float = 90, output_filename: str = None):
     """
     """
-
-    from bokeh.models import Slope
-    from bokeh.plotting import figure
-    from bokeh.io import export_png
 
     if not output_filename:
         # view the plot in a Jupyter notebook

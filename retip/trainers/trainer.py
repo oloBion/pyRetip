@@ -5,6 +5,7 @@ import scipy.stats as st
 
 from sklearn import metrics
 
+import retip
 from retip import Dataset
 
 
@@ -36,7 +37,7 @@ class Trainer:
         else:
             raise Exception(f'Unsupported data format {type(data)}')
 
-    def score(self, data=None):
+    def score(self, data=None, plot: bool = None, plot_filename: str = None):
         if data is None:
             if self.dataset is not None:
                 data = self.dataset.get_test_data()
@@ -52,6 +53,9 @@ class Trainer:
         y = data[Dataset.RT_COLUMN].values
         y_pred = self.predict(data)
         rt_error = y - y_pred
+
+        if plot:
+            retip.plot_rt_scatter(y, y_pred, output_filename=plot_filename)
 
         return {
             'root_mean_squared_error': metrics.mean_squared_error(y, y_pred, squared=True),
