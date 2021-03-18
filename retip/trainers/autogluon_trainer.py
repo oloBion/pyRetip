@@ -28,6 +28,7 @@ class AutoGluonTrainer(Trainer):
 
     def load_model(self, filename: str):
         self.model = TabularPredictor.load(filename)
+        print(f'Loaded {filename}')
 
 
     def train(self):

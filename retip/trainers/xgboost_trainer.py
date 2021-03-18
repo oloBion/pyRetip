@@ -45,6 +45,7 @@ class XGBoostTrainer(Trainer):
         if isinstance(export, dict) and export.get('model_name') == 'XGBoost':
             self.model_columns = export['model_columns']
             self.model = export['model']
+            print(f'Loaded {filename}')
         else:
             raise Exception(f'{filename} is an invalid XGBoost model export')
 
