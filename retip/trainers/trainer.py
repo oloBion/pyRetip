@@ -21,12 +21,18 @@ class Trainer:
     def train(self):
         pass
 
+    def filter_columns(self, df):
+        if hasattr(self, 'model_columns'):
+            return df[[c for c in df.columns if c in self.model_columns]]
+        else:
+            return df
+
     def predict(self, data):
         if isinstance(data, Dataset):
             X = data.get_data()
-            return self.model.predict(X[self.model_columns])
+            return self.model.predict(self.filter_columns(X))
         elif isinstance(data, pd.DataFrame):
-            return self.model.predict(data[self.model_columns])
+            return self.model.predict(self.filter_columns(data))
         else:
             raise Exception(f'Unsupported data format {type(data)}')
 
@@ -66,7 +72,7 @@ class Trainer:
                 raise Exception('RTP column already exists!')
                 return
 
-            y_pred = self.model.predict(X[self.model_columns])
+            y_pred = self.model.predict(self.filter_columns(X))
             y_series = pd.Series(y_pred, index=X.index)
 
             if Dataset.RT_COLUMN in data.df.columns:
@@ -80,7 +86,7 @@ class Trainer:
                 raise Exception('RTP column already exists!')
                 return
 
-            y_pred = self.model.predict(data[self.model_columns])
+            y_pred = self.model.predict(self.filter_columns(data))
 
             if Dataset.RT_COLUMN in data.columns:
                 idx = data.df.columns.get_loc(Dataset.RT_COLUMN)

@@ -36,7 +36,6 @@ class AutoGluonTrainer(Trainer):
             t = time.time()
 
             training_data = self.dataset.get_training_data()
-            self.model_columns = list(training_data.drop(Dataset.RT_COLUMN, axis=1).columns)
 
             self.model = TabularPredictor(label=Dataset.RT_COLUMN)
             self.model.fit(
