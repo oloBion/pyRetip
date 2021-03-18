@@ -1,5 +1,6 @@
 autogluon==0.1.0
 mxnet<2.0.0
+bokeh
 jupyterlab
 mordred==1.2.0
 joblib

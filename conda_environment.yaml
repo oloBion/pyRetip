@@ -15,6 +15,7 @@ dependencies:
   - mordred=1.2.0
   - pubchempy
   - tqdm
+  - bokeh
   - pip
   - pip:
     - mxnet<2.0.0
