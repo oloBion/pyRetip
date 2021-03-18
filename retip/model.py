@@ -197,7 +197,7 @@ class AutoGluonTrainer(Trainer):
 
         elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
 
-        fit_summary = model.fit_summary(verbosity=0)
-        best_score = fit_summary['leaderboard'].loc[0, 'score']
+        fit_summary = pd.DataFrame(self.model.fit_summary(verbosity=0))
+        best_score = -fit_summary.model_performance.max()
 
         print(f'Training completed in {elapsed_time} with best RMSE {best_score:.3f}')
