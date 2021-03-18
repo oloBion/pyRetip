@@ -9,6 +9,7 @@ dependencies:
   - openpyxl
   - scikit-learn
   - xgboost
+  - joblib
   - jupyterlab
   - rdkit
   - mordred=1.2.0
