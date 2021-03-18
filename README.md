@@ -15,7 +15,7 @@ Once Anaconda is installed, simply check out the Retip repository and create the
 ```shell
 git clone https://github.com/oloBion/retip2.git
 cd retip2
-conda env create -f micasense_conda_env.yml
+conda env create -f conda_environment.yaml
 ```
 
 ### Windows
@@ -23,7 +23,7 @@ conda env create -f micasense_conda_env.yml
 [Download the repository code](https://github.com/oloBion/retip2/archive/master.zip) and unextract it or clone the repository using Git for Windows.  Then open the Anaconda Console, navigate to the local Retip directory using `cd`, and run:
 
 ```shell
-conda env create -f micasense_conda_env.yml
+conda env create -f conda_environment.yaml
 ```
 
 ## Running Retip
