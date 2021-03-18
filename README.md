@@ -1,4 +1,4 @@
-![Retip](../images/retip_logo.png)
+![Retip](images/retip_logo.png)
 
 # Retip: Retention Time Prediction for Metabolomics
 
