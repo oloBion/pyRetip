@@ -1,9 +1,13 @@
 import datetime
+import importlib
 import pandas as pd
 import shutil
 import time
 
-from autogluon.tabular import TabularPredictor
+try:
+    from autogluon.tabular import TabularPredictor
+except:
+    pass
 
 from retip import Dataset, Trainer
 
@@ -11,6 +15,9 @@ from retip import Dataset, Trainer
 class AutoGluonTrainer(Trainer):
     def __init__(self, dataset: Dataset = None, training_duration: int = 60,
                  preset: str = 'good_quality_faster_inference_only_refit'):
+
+        if not importlib.util.find_spec('autogluon'):
+            raise Exception('AutoGluon is not properly installed!')
 
         self.dataset = dataset
         self.training_duration = training_duration
