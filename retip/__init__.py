@@ -1,3 +1,3 @@
 from .dataset import *
-from .model import *
+from .models import *
 from .visualization import *

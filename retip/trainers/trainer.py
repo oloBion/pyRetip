@@ -1,0 +1,92 @@
+import abc
+import numpy as np
+import pandas as pd
+import scipy.stats as st
+
+from sklearn import metrics
+
+from retip import Dataset
+
+
+class Trainer:
+    @abc.abstractmethod
+    def save_model(self, filename: str):
+        pass
+
+    @abc.abstractmethod
+    def load_model(self, filename: str):
+        pass
+
+    @abc.abstractmethod
+    def train(self):
+        pass
+
+    def predict(self, data):
+        if isinstance(data, Dataset):
+            X = data.get_data()
+            return self.model.predict(X[self.model_columns])
+        elif isinstance(data, pd.DataFrame):
+            return self.model.predict(data[self.model_columns])
+        else:
+            print(f'Unsupported data format {type(data)}')
+
+    def score(self, data=None):
+        if data is None:
+            data = self.dataset.get_test_data()
+        elif isinstance(data, Dataset):
+            data = data.get_data()
+        elif isinstance(data, pd.DataFrame):
+            pass
+        else:
+            print(f'Unsupported data format {type(data)}')
+            return
+
+        y = data[Dataset.RT_COLUMN].values
+        y_pred = self.predict(data)
+        rt_error = y - y_pred
+
+        return {
+            'root_mean_squared_error': metrics.mean_squared_error(y, y_pred, squared=True),
+            'mean_absolute_error': metrics.mean_absolute_error(y, y_pred),
+            'explained_variance_score': metrics.explained_variance_score(y, y_pred),
+            'r2_score': metrics.r2_score(y, y_pred),
+            'pearson_correlation': st.pearsonr(y, y_pred)[0],
+            'mean_squared_error': metrics.mean_squared_error(y, y_pred),
+            'median_absolute_error': metrics.median_absolute_error(y, y_pred),
+            '95_percent_confidence_interval': st.norm.ppf(0.95, loc=np.mean(rt_error), scale=np.std(rt_error))
+        }
+
+    def annotate(self, data):
+        if isinstance(data, Dataset):
+            X = data.get_data()
+
+            if 'RTP' in X.columns:
+                print('RTP column already exists!')
+                return
+
+            y_pred = self.model.predict(X[self.model_columns])
+            y_series = pd.Series(y_pred, index=X.index)
+
+            if Dataset.RT_COLUMN in data.df.columns:
+                idx = data.df.columns.get_loc(Dataset.RT_COLUMN)
+            else:
+                idx = data.df.columns.get_loc('SMILES')
+
+            data.df.insert(idx + 1, 'RTP', y_series)
+        elif isinstance(data, pd.DataFrame):
+            if 'RTP' in data.columns:
+                print('RTP column already exists!')
+                return
+
+            y_pred = self.model.predict(data[self.model_columns])
+
+            if Dataset.RT_COLUMN in data.columns:
+                idx = data.df.columns.get_loc(Dataset.RT_COLUMN)
+            elif 'SMILES' in data.columns:
+                idx = data.df.columns.get_loc('SMILES')
+            else:
+                idx = 0
+
+            data.insert(idx + 1, 'RTP', y_pred)
+        else:
+            print(f'Unsupported data format {type(data)}')
