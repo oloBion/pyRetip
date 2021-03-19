@@ -16,7 +16,7 @@ def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
         output_notebook()
 
     # calculate linear fit
-    slope, intercept = par = np.polyfit(rt, rt_pred, 1)
+    slope, intercept = np.polyfit(rt, rt_pred, 1)
 
     p = figure()
     p.xaxis.axis_label = 'Library RT'
@@ -28,7 +28,7 @@ def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
     if output_filename:
         if not output_filename.lower().endswith('.png'):
             output_filename += '.png'
-        export_png()
+        export_png(p, filename=output_filename)
     else:
         show(p)
 
@@ -52,7 +52,7 @@ def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confi
 
     # calculate CI and linear fit
     ci = st.norm.ppf(confidence_interval / 100, loc=np.mean(rt_error), scale=np.std(rt_error))
-    slope, intercept = par = np.polyfit(y, y_pred, 1)
+    slope, intercept = np.polyfit(y, y_pred, 1)
 
     # find outliers
     a_t, b_t = np.array([0, intercept + ci]), np.array([1, slope + intercept + ci])
@@ -85,7 +85,7 @@ def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confi
     if output_filename:
         if not output_filename.lower().endswith('.png'):
             output_filename += '.png'
-        export_png()
+        export_png(p, filename=output_filename)
     else:
         show(p)
 

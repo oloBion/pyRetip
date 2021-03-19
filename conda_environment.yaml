@@ -17,6 +17,7 @@ dependencies:
   - tqdm
   - bokeh
   - selenium
+  - geckodriver
   - pip
   - pip:
     - mxnet<2.0.0
