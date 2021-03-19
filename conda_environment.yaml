@@ -16,6 +16,7 @@ dependencies:
   - pubchempy
   - tqdm
   - bokeh
+  - selenium
   - pip
   - pip:
     - mxnet<2.0.0
