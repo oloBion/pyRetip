@@ -10,10 +10,11 @@ from retip import Dataset, Trainer
 
 
 class XGBoostTrainer(Trainer):
-    def __init__(self, dataset: Dataset = None, cv: int = 10, n_cpu: int = None):
+    def __init__(self, dataset: Dataset = None, cv: int = 10, n_cpu: int = None, n_jobs: int = None):
         self.dataset = dataset
         self.cv = cv
         self.n_cpu = n_cpu
+        self.n_jobs = n_jobs
 
         self.parameter_space = {
             'n_estimators': [300, 400, 500, 600, 700, 800, 1000],
@@ -50,7 +51,7 @@ class XGBoostTrainer(Trainer):
             raise Exception(f'{filename} is an invalid XGBoost model export')
 
 
-    def train(self):
+    def train(self, verbosity: int = 1):
         if self.dataset is not None:
             training_data = self.dataset.get_training_data()
             X_train = training_data.drop(Dataset.RT_COLUMN, axis=1)
@@ -64,8 +65,8 @@ class XGBoostTrainer(Trainer):
                 xgb.XGBRegressor(n_jobs=self.n_cpu),
                 self.parameter_space,
                 cv=self.cv,
-                verbose=1,
-                n_jobs=1
+                verbose=verbosity,
+                n_jobs=self.n_jobs
             ).fit(X_train, y_train)
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
