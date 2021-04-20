@@ -14,7 +14,7 @@ Once Anaconda is installed, simply check out the Retip repository and create an 
 
 ```shell
 git clone https://github.com/oloBion/pyRetip.git
-cd retip2
+cd pyRetip
 conda env create
 ```
 
