@@ -58,7 +58,7 @@ class Trainer:
             retip.plot_rt_scatter(y, y_pred, output_filename=plot_filename)
 
         return {
-            'root_mean_squared_error': metrics.mean_squared_error(y, y_pred, squared=True),
+            'root_mean_squared_error': metrics.mean_squared_error(y, y_pred, squared=False),
             'mean_absolute_error': metrics.mean_absolute_error(y, y_pred),
             'explained_variance_score': metrics.explained_variance_score(y, y_pred),
             'r2_score': metrics.r2_score(y, y_pred),
