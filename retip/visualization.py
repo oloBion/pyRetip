@@ -23,6 +23,7 @@ def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
     p.yaxis.axis_label = 'Predicted RT'
     p.scatter(rt, rt_pred, size=3)
 
+    p.add_layout(Slope(gradient=1, y_intercept=0, line_width=1, line_color='black', line_alpha=0.5))
     p.add_layout(Slope(gradient=slope, y_intercept=intercept, line_color='blue'))
 
     if output_filename:
@@ -89,9 +90,13 @@ def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confi
     else:
         show(p)
 
-    # return outliers
+    # return annotated dataframe and outliers
+    annotated = dataset.df[[c for c in dataset.df.columns if c in ['Name', 'InChIKey', 'SMILES', 'RT']]].copy()
+    annotated['RTP'] = y_pred
+
     df = dataset.df[['Name', 'RT']]
     df_rtp = y_df[~y_df.in_ci][['y_pred']]
     df_rtp.columns = ['RTP']
+    outliers = df.join(df_rtp, how='inner')
     
-    return df.join(df_rtp, how='inner')
+    return annotated, outliers
