@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 import tqdm
 
+from typing import Union
+
 from mordred import Calculator, descriptors
 from rdkit import Chem
-
 from sklearn.model_selection import train_test_split
 
 
@@ -13,9 +14,9 @@ class Dataset:
     RT_COLUMN = 'RT'
     IDENTIFIER_COLUMNS = ['PubChem CID', 'SMILES']
 
-    def __init__(self, filename, test_size: float = 0.2, seed: int = None, sheet_name: str = None):
+    def __init__(self, data: Union[str, pd.DataFrame], test_size: float = 0.2, seed: int = None, sheet_name: str = None):
         # load and validate data set
-        self.load_dataframe(filename, sheet_name)
+        self._load_dataframe(data, sheet_name)
 
         self.seed = seed
         self.test_size = test_size
@@ -26,23 +27,35 @@ class Dataset:
         self.descriptor_names = [str(d) for d in self.calc.descriptors]
 
 
-    def load_dataframe(self, filename: str, sheet_name: str = None):
+    def _load_dataframe(self, data: Union[str, pd.DataFrame], sheet_name: str = None):
         """
         """
 
-        # load data frame
-        if filename.lower().endswith('.csv'):
-            self.df = pd.read_csv(filename)
-        elif filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-            self.df = pd.read_excel(filename, sheet_name=sheet_name)
+        if isinstance(data, str):
+            if data.lower().endswith('.csv'):
+                self.df = pd.read_csv(data)
+            elif data.lower().endswith('.xls') or data.lower().endswith('.xlsx'):
+                self.df = pd.read_excel(data, sheet_name=sheet_name)
+            else:
+                extension = data.split('.')[-1]
+                raise Exception(f'{extension} is not a supported data format')
+
+        elif isinstance(data, pd.DataFrame):
+            self.df = data
+
         else:
-            extension = filename.split('.')[-1]
-            raise Exception(f'{extension} is not a supported data format')
+            raise Exception(f'{type(data)} is not a supported data type')
+
+        self._validate_dataframe()
+
+    def _validate_dataframe(self):
+        """
+        """
 
         # ensure that the data frame contains required columns
         if self.NAME_COLUMN not in self.df.columns:
             raise Exception(f'{self.NAME_COLUMN} column was not found in the data frame')
-        
+
         if self.RT_COLUMN not in self.df.columns:
             raise Exception(f'{self.RT_COLUMN} column was not found in the data frame')
 
@@ -56,7 +69,7 @@ class Dataset:
 
         return self.df.head()
 
-    def describe():
+    def describe(self):
         """
         """
 
