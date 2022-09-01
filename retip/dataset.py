@@ -1,164 +1,299 @@
+from curses import meta
 import numpy as np
+import json
 import pandas as pd
+import pkgutil
+import pubchempy as pcp
 import tqdm
+import warnings
 
-from typing import Union
+from pathlib import Path
+from typing import List, Union
 
 from mordred import Calculator, descriptors
 from rdkit import Chem
 from sklearn.model_selection import train_test_split
 
 
+RT_COLUMN = 'RT'
+IDENTIFIER_COLUMNS = ['PubChem CID', 'SMILES']
+
+
 class Dataset:
-    NAME_COLUMN = 'Name'
-    RT_COLUMN = 'RT'
-    IDENTIFIER_COLUMNS = ['PubChem CID', 'SMILES']
+    def __init__(self, target_column: str = RT_COLUMN):
+        """
+        """
 
-    def __init__(self, data: Union[str, pd.DataFrame], test_size: float = 0.2, seed: int = None, sheet_name: str = None):
-        # load and validate data set
-        self._load_dataframe(data, sheet_name)
-
-        self.seed = seed
-        self.test_size = test_size
-        self.data = None
+        self.target_column = target_column
+        self.datasets = {}
 
         # create mordred calculator
         self.calc = Calculator(descriptors, ignore_3D=True)
         self.descriptor_names = [str(d) for d in self.calc.descriptors]
 
 
-    def _load_dataframe(self, data: Union[str, pd.DataFrame], sheet_name: str = None):
+    def load_retip_dataset(self, training: Union[str, Path, pd.DataFrame], testing: Union[str, Path, pd.DataFrame] = None, validation: Union[str, Path, pd.DataFrame] = None):
         """
         """
 
-        if isinstance(data, str):
-            if data.lower().endswith('.csv'):
-                self.df = pd.read_csv(data)
-            elif data.lower().endswith('.xls') or data.lower().endswith('.xlsx'):
-                self.df = pd.read_excel(data, sheet_name=sheet_name)
+        self.datasets = {}
+        self.datasets['training'] = self._load_dataframe(training)
+
+        if testing is not None:
+            self.datasets['testing'] = self._load_dataframe(testing)
+
+        if validation is not None:
+            self.datasets['validation'] = self._load_dataframe(validation)
+
+        return self._validate_dataframe()
+
+    def load_gcn_dataset(self, dataset: Union[str, Path, pd.DataFrame]):
+        """
+        """
+
+        df = self._load_dataframe(dataset)
+        df = df.rename({'compound_name': 'Name', 'retention_time': 'RT', 'smiles': 'SMILES'}, axis=1)
+        split_index = df.pop('split_index')
+
+        self.datasets = {}
+        self.datasets['training'] = df[split_index.isin([1, 2])].reset_index(drop=True)
+        self.datasets['testing'] = df[split_index == 3].reset_index(drop=True)
+
+        if (split_index == 4).any():
+            self.datasets['validation'] = df[split_index == 4].reset_index(drop=True)
+
+        return self._validate_dataframe()
+
+    def save_retip_dataset(self, filename_prefix: str, include_descriptors: bool = True):
+        """
+        """
+        
+        for k, df in self.datasets.items():
+            if not include_descriptors:
+                df = df[df.columns.difference(self.descriptor_names)]
+
+            df.to_csv(f'{filename_prefix}_{k}.csv', index=False)
+
+        print(f'Saved dataset to {filename_prefix}')
+
+
+    def _load_dataframe(self, dataset: Union[str, Path, pd.DataFrame]):
+        """
+        """
+
+        if isinstance(dataset, str):
+            if dataset.lower().endswith('.csv'):
+                return pd.read_csv(dataset)
+            elif dataset.lower().endswith('.xls') or dataset.lower().endswith('.xlsx'):
+                return pd.read_excel(dataset)
             else:
-                extension = data.split('.')[-1]
+                extension = dataset.split('.')[-1]
                 raise Exception(f'{extension} is not a supported data format')
 
-        elif isinstance(data, pd.DataFrame):
-            self.df = data
+        elif isinstance(dataset, pd.DataFrame):
+            return dataset
 
         else:
-            raise Exception(f'{type(data)} is not a supported data type')
-
-        self._validate_dataframe()
+            raise Exception(f'{type(dataset)} is not a supported data type')
 
     def _validate_dataframe(self):
         """
         """
 
-        # ensure that the data frame contains required columns
-        if self.NAME_COLUMN not in self.df.columns:
-            raise Exception(f'{self.NAME_COLUMN} column was not found in the data frame')
+        for k, df in self.datasets.items():
+            # ensure that the target column is present
+            if self.target_column not in df.columns:
+                raise Exception(f'Target column "{self.target_column}" was not found in the {k} dataset')
 
-        if self.RT_COLUMN not in self.df.columns:
-            raise Exception(f'{self.RT_COLUMN} column was not found in the data frame')
+            # ensure that at least one identifier column is present
+            identifier_cols = [x for x in IDENTIFIER_COLUMNS if x in df.columns]
 
-        if not any(x in self.df.columns for x in self.IDENTIFIER_COLUMNS):
-            valid_columns = ', '.join(self.IDENTIFIER_COLUMNS)
-            raise Exception(f'No identifier columns were not found in the data frame: {valid_columns}')
+            if not any(x in df.columns for x in IDENTIFIER_COLUMNS):
+                valid_columns = ', '.join(IDENTIFIER_COLUMNS)
+                raise Exception(f'No identifier columns ({valid_columns}) were not found in the {k} dataset')
+
+            # clean identifier columns
+            for col in identifier_cols:
+                df.loc[:, col] = df[col].str.strip().replace('', np.NaN)
+
+            # check for missing identifiers
+            missing_identifiers = df[identifier_cols].isnull().any(axis=1).sum()
+
+            if missing_identifiers:
+                print(f'Warning: the {k} dataset is missing {missing_identifiers} structural identifiers - these rows will be ignored')
+
+        return self
+
+
+    def split_dataset(self, test_split: float = 0.2, validation_split: float = 0, seed: int = None):
+        """
+        """
+
+        if 'testing' in self.datasets:
+            raise Exception('Dataset is already split into training and test subsets')
+        elif test_split == 0:
+            raise Exception('A test set split larger than 0 must be given')
+        elif validation_split > 0 and 'validation' in self.datasets:
+            raise Exception('A validation dataset has already been provided')
+        elif test_split + validation_split > 0.4:
+            raise Exception('training set must consist of at least 40% of the dataset')
+        else:
+            split_ratio = test_split + validation_split
+            self.datasets['training'], self.datasets['testing'] = train_test_split(self.datasets['training'], test_size=split_ratio, random_state=seed)
+
+            if validation_split > 0:
+                split_ratio = validation_split / (test_split + validation_split)
+                self.datasets['testing'], self.datasets['validation'] = train_test_split(self.datasets['testing'], test_size=split_ratio, random_state=seed)
+
+        return self
+
+
+    def _pull_pubchem_smiles(self, pubchem_cid: int):
+        """
+        """
+
+        try:
+            c = pcp.Compound(pubchem_cid)
+            return c.canonical_smiles
+        except pcp.NotFoundError:
+            print(f'Error: no record found for PubChem CID {pubchem_cid}')
+
+    def calculate_descriptors(self, n_proc: int = 1):
+        """
+        """
+
+        for k, df in self.datasets.items():
+            if any(c in self.descriptor_names for c in df.columns):
+                print(f'Skipping descriptor calculation for {k} dataset, descriptors have already been calculated')
+                continue
+
+            print(f'Calculating descriptors for {k} dataset')
+            descs = []
+
+            for i, row in tqdm.tqdm(df.iterrows(), total=len(df)):
+                smi = row.SMILES
+
+                # pull SMILES PubChem if necessary
+                if pd.isnull(row.SMILES):
+                    if not pd.isnull(row['PubChem CID']):
+                        smi = self._pull_pubchem_smiles(row['PubChem CID'])
+
+                        if smi:
+                            df.loc[i, 'SMILES'] = smi
+
+                # calculate chemical descriptors if necessary
+                if pd.isnull(smi):
+                    descs.append({})
+                else:
+                    try:
+                        mol = Chem.MolFromSmiles(smi)
+
+                        with warnings.catch_warnings():
+                            warnings.filterwarnings('ignore', category=DeprecationWarning)
+
+                            desc = self.calc(mol)
+                            desc = desc.fill_missing()
+                            desc = desc.asdict()
+                            descs.append(desc)
+                    except:
+                        print(f'Error: descriptor calculation failed for {smi}')
+                        descs.append({})
+            
+            descs = pd.DataFrame(descs)
+            self.datasets[k] = df.join(descs)
+        
+        return self
+
+
+    def preprocess_features(self, descriptor_subset: Union[str, List[str]] = None, descriptor_counts_threshold: float = 0.999):
+        """
+        """
+
+        dataset_columns = []
+
+        # preprocess each dataset indiviually
+        for k, df in self.datasets.items():
+            descriptor_cols = [c for c in df.columns if c in self.descriptor_names]
+
+            # remove rows with no non-null descriptors
+            df = df.dropna(how='all', subset=descriptor_cols)
+
+            # separate metdaata and features
+            metadata = df.loc[:, [c for c in df.columns if c not in descriptor_cols]]
+            features = df.loc[:, descriptor_cols]
+
+            # filter descriptors by predefined subset if specified
+            if isinstance(descriptor_subset, str):
+                # use only descriptors calculable for a given fraction of the given chemical dataset
+                if descriptor_subset in ['metabolomics', 'lipidomics']:
+                    descriptor_counts = json.loads(pkgutil.get_data(__package__, f'data/{descriptor_subset}_descriptors_counts.json'))
+                    max_count = max(descriptor_counts.values())
+
+                    descriptor_subset = [c for c, v in descriptor_counts.items() if v >= descriptor_counts_threshold * max_count]
+                    features = features.loc[:, [c for c in descriptor_cols if c in descriptor_subset]]
+                else:
+                    raise Exception(f'invalid descriptor subset name {descriptor_subset}')
+            elif isinstance(descriptor_subset, list):
+                # use custom feature inclusion list
+                features = features.loc[:, [c for c in descriptor_cols if c in descriptor_subset]]
+            else:
+                raise Exception(f'invalid descriptor subset type {descriptor_subset}')
+            
+            # drop descriptors with any null values
+            features = features.dropna(how='any', axis=1)
+
+            # update dataset
+            self.datasets[k] = metadata.join(features)
+            dataset_columns.append(list(self.datasets[k].columns))
+
+
+        # restrict features to those shared by all datasets
+        columns = set.intersection(*map(set, dataset_columns))
+        columns = sorted(columns, key=dataset_columns[0].index)
+
+        for k in self.datasets:
+            self.datasets[k] = self.datasets[k].loc[:, columns]
+        
+        print(f'Reduced feature set from {len(descriptor_cols)} to {len(columns) - len(metadata)}')
+        return self
+
 
     def head(self):
         """
         """
+        
+        if not self.datasets:
+            raise Exception('No datasets defined!')
 
-        return self.df.head()
+        for k, df in self.datasets.items():
+            print(k.title())
+            print(df.head())
 
     def describe(self):
         """
         """
-
-        print('Shape:', self.df.shape)
-        print(self.df[self.df.columns.difference(self.descriptor_names)].describe())
-
-
-    def load_structures(self):
-        """
-        """
-
-
-    def calculate_descriptors(self):
-        """
-        """
-
-        assert('SMILES' in self.df.columns)
-
-        if all(d in self.df.columns for d in self.descriptor_names):
-            print('Skipping molecular descriptor calculation, descriptors have already been calculated')
-            return
-
-        descs = []
-        smiles = set(self.df.SMILES)
-
-        print(f'Calculating descriptors for {len(smiles)} structures')
-
-        for smi in tqdm.tqdm(smiles):
-            try:
-                mol = Chem.MolFromSmiles(smi)
-
-                desc = self.calc(mol)
-                desc = desc.fill_missing()
-
-                desc = desc.asdict()
-                desc['SMILES'] = smi
-
-                descs.append(desc)
-            except:
-                print(f'Parsing SMILES {smi} failed')
-
-        descs = pd.DataFrame(descs)
-        self.df = pd.merge(self.df, descs, how='left', on='SMILES')
-
-
-    def build_dataset(self):
-        if not all(d in self.df.columns for d in self.descriptor_names):
-            self.calculate_descriptors()
         
-        self.data = self.df[[self.RT_COLUMN] + self.descriptor_names]
-        self.data = self.data.dropna(how='all', subset=self.descriptor_names)
-        self.data = self.data.dropna(how='any', axis=1)
+        if not self.datasets:
+            raise Exception('No datasets defined!')
 
-        if self.test_size > 0:
-            self.training_data, self.test_data = train_test_split(self.data, test_size=self.test_size, random_state=self.seed)
-        else:
-            self.training_data, self.test_data = self.data, self.data.loc[[]]
-    
-    def save_dataset(self, filename: str, include_descriptors: bool = True):
-        if include_descriptors:
-            output = self.df
-        else:
-            output = self.df[self.df.columns.difference(self.descriptor_names)]
+        for k, df in self.datasets.items():
+            print(k.title(), df.shape)
 
-        if filename.lower().endswith('.csv'):
-            output.to_csv(filename, index=False)
-        elif filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-            output.to_excel(filename, index=False)
-        else:
-            extension = filename.split('.')[-1]
-            raise Exception(f'{extension} is not a supported data format')
-
-        print(f'Saved dataset to {filename}')
-
-
-    def get_data(self):
-        if self.data is None:
-            self.build_dataset()
-
-        return self.data
 
     def get_training_data(self):
-        if self.data is None:
-            self.build_dataset()
-        
-        return self.training_data
-    
-    def get_test_data(self):
-        if self.data is None:
-            self.build_dataset()
-        
-        return self.test_data
+        if 'training' not in self.datasets:
+            raise Exception('No training data defined!')
+
+        return self.datasets['training']
+
+    def get_testing_data(self):
+        if 'testing' not in self.datasets:
+            raise Exception('No testing data defined!')
+
+        return self.datasets['testing']
+
+    def get_validation_data(self):
+        if 'validation' not in self.datasets:
+            raise Exception('No validation data defined!')
+
+        return self.datasets['validation']
