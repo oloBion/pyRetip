@@ -11,7 +11,6 @@ dependencies:
   - xgboost
   - joblib
   - jupyterlab
-  - rdkit
   - mordred=1.2.0
   - pubchempy
   - tqdm
@@ -20,5 +19,4 @@ dependencies:
   - geckodriver
   - pip
   - pip:
-    - mxnet<2.0.0
-    - autogluon==0.1.0
+    - autogluon==0.5.2
