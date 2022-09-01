@@ -17,6 +17,7 @@ dependencies:
   - bokeh
   - selenium
   - geckodriver
+  - pytest
   - pip
   - pip:
     - autogluon==0.5.2
