@@ -9,24 +9,27 @@ try:
 except:
     pass
 
-from retip import Dataset, Trainer
+from .. import Dataset
+from . import Trainer
 
 
 class AutoGluonTrainer(Trainer):
-    def __init__(self, dataset: Dataset = None, training_duration: int = 60,
-                 preset: str = 'good_quality_faster_inference_only_refit'):
+    def __init__(self, dataset: Dataset = None, training_duration: int = 60, preset: str = 'high_quality'):
+        """
+        """
+
+        super().__init__(dataset)
 
         if not importlib.util.find_spec('autogluon'):
             raise Exception('AutoGluon is not properly installed!')
 
-        self.dataset = dataset
         self.training_duration = training_duration
         self.preset = preset
 
 
     def save_model(self, filename: str):
         if hasattr(self, 'model'):
-            model_dir = self.model._learner.path
+            model_dir = self.predictor._learner.path
             shutil.move(model_dir, filename)
 
             print(f'Moved AutoGluon model to {filename}')
@@ -34,7 +37,7 @@ class AutoGluonTrainer(Trainer):
             raise Exception('Model has not been trained!')
 
     def load_model(self, filename: str):
-        self.model = TabularPredictor.load(filename)
+        self.predictor = TabularPredictor.load(filename)
         print(f'Loaded {filename}')
 
 
@@ -44,8 +47,8 @@ class AutoGluonTrainer(Trainer):
 
             training_data = self.dataset.get_training_data()
 
-            self.model = TabularPredictor(label=Dataset.RT_COLUMN)
-            self.model.fit(
+            self.predictor = TabularPredictor(label=self.dataset.target_column)
+            self.predictor.fit(
                 train_data=training_data,
                 time_limit=60 * self.training_duration,
                 presets=self.preset
@@ -53,7 +56,7 @@ class AutoGluonTrainer(Trainer):
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
 
-            fit_summary = pd.DataFrame(self.model.fit_summary(verbosity=0))
+            fit_summary = pd.DataFrame(self.predictor.fit_summary(verbosity=0))
             best_score = -fit_summary.model_performance.max()
 
             print(f'Training completed in {elapsed_time} with best RMSE {best_score:.3f}')

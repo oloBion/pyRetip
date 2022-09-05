@@ -5,13 +5,17 @@ import time
 
 from sklearn.model_selection import GridSearchCV
 
-from retip import Dataset, Trainer
-
+from .. import Dataset
+from . import Trainer
 
 
 class XGBoostTrainer(Trainer):
-    def __init__(self, dataset: Dataset = None, cv: int = 10, n_cpu: int = None, n_jobs: int = None):
-        self.dataset = dataset
+    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = None, n_jobs: int = 1):
+        """
+        """
+
+        super().__init__(dataset)
+
         self.cv = cv
         self.n_cpu = n_cpu
         self.n_jobs = n_jobs
@@ -32,7 +36,7 @@ class XGBoostTrainer(Trainer):
             export = {
                 'model_name': 'XGBoost',
                 'model_columns': self.model_columns,
-                'model': self.model.best_estimator_
+                'model': self.predictor.best_estimator_
             }
 
             joblib.dump(export, filename)
@@ -45,7 +49,7 @@ class XGBoostTrainer(Trainer):
 
         if isinstance(export, dict) and export.get('model_name') == 'XGBoost':
             self.model_columns = export['model_columns']
-            self.model = export['model']
+            self.predictor = export['model']
             print(f'Loaded {filename}')
         else:
             raise Exception(f'{filename} is an invalid XGBoost model export')
@@ -54,14 +58,14 @@ class XGBoostTrainer(Trainer):
     def train(self, verbosity: int = 1):
         if self.dataset is not None:
             training_data = self.dataset.get_training_data()
-            X_train = training_data.drop(Dataset.RT_COLUMN, axis=1)
-            y_train = training_data[Dataset.RT_COLUMN].values
+            X_train = training_data.drop(self.dataset.target_column, axis=1)
+            y_train = training_data[self.dataset.target_column].values
 
             self.model_columns = X_train.columns
 
             t = time.time()
 
-            self.model = GridSearchCV(
+            self.predictor = GridSearchCV(
                 xgb.XGBRegressor(n_jobs=self.n_cpu),
                 self.parameter_space,
                 cv=self.cv,
@@ -70,6 +74,6 @@ class XGBoostTrainer(Trainer):
             ).fit(X_train, y_train)
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
-            print(f'Training completed in {elapsed_time} with best RMSE {self.model.best_score_:.3f}')
+            print(f'Training completed in {elapsed_time} with best RMSE {self.predictor.best_score_:.3f}')
         else:
             raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
