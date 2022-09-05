@@ -32,20 +32,22 @@ class Dataset:
         self.descriptor_names = [str(d) for d in self.calc.descriptors]
 
 
-    def load_retip_dataset(self, training: Union[str, Path, pd.DataFrame], testing: Union[str, Path, pd.DataFrame] = None, validation: Union[str, Path, pd.DataFrame] = None):
+    def load_retip_dataset(self, training: Union[str, Path, pd.DataFrame], training_sheet_name: Union[str, int] = 0,
+                           testing: Union[str, Path, pd.DataFrame] = None, testing_sheet_name: Union[str, int] = 0,
+                           validation: Union[str, Path, pd.DataFrame] = None, validation_sheet_name: Union[str, int] = 0):
         """
         """
 
         self.datasets = {}
-        self.datasets['training'] = self._load_dataframe(training)
+        self.datasets['training'] = self._load_dataframe(training, training_sheet_name)
 
         if testing is not None:
-            self.datasets['testing'] = self._load_dataframe(testing)
+            self.datasets['testing'] = self._load_dataframe(testing, testing_sheet_name)
 
         if validation is not None:
-            self.datasets['validation'] = self._load_dataframe(validation)
+            self.datasets['validation'] = self._load_dataframe(validation, validation_sheet_name)
 
-        return self._validate_dataframe()
+        self._validate_dataframe()
 
     def load_gcn_dataset(self, dataset: Union[str, Path, pd.DataFrame]):
         """
@@ -62,22 +64,9 @@ class Dataset:
         if (split_index == 4).any():
             self.datasets['validation'] = df[split_index == 4].reset_index(drop=True)
 
-        return self._validate_dataframe()
+        self._validate_dataframe()
 
-    def save_retip_dataset(self, filename_prefix: str, include_descriptors: bool = True):
-        """
-        """
-        
-        for k, df in self.datasets.items():
-            if not include_descriptors:
-                df = df[df.columns.difference(self.descriptor_names)]
-
-            df.to_csv(f'{filename_prefix}_{k}.csv', index=False)
-
-        print(f'Saved dataset to {filename_prefix}')
-
-
-    def _load_dataframe(self, dataset: Union[str, Path, pd.DataFrame]):
+    def _load_dataframe(self, dataset: Union[str, Path, pd.DataFrame], sheet_name: Union[str, int] = 0):
         """
         """
 
@@ -85,7 +74,7 @@ class Dataset:
             if dataset.lower().endswith('.csv'):
                 return pd.read_csv(dataset)
             elif dataset.lower().endswith('.xls') or dataset.lower().endswith('.xlsx'):
-                return pd.read_excel(dataset)
+                return pd.read_excel(dataset, sheet_name=sheet_name)
             else:
                 extension = dataset.split('.')[-1]
                 raise Exception(f'{extension} is not a supported data format')
@@ -145,8 +134,6 @@ class Dataset:
                 split_ratio = validation_split / (test_split + validation_split)
                 self.datasets['testing'], self.datasets['validation'] = train_test_split(self.datasets['testing'], test_size=split_ratio, random_state=seed)
 
-        return self
-
 
     def _pull_pubchem_smiles(self, pubchem_cid: int):
         """
@@ -200,9 +187,9 @@ class Dataset:
                         descs.append({})
             
             descs = pd.DataFrame(descs)
+            descs = descs.replace({False: 0, True: 1})
+
             self.datasets[k] = df.join(descs)
-        
-        return self
 
 
     def preprocess_features(self, descriptor_subset: Union[str, List[str]] = None, descriptor_counts_threshold: float = 0.999):
@@ -280,20 +267,30 @@ class Dataset:
             print(k.title(), df.shape)
 
 
-    def get_training_data(self):
-        if 'training' not in self.datasets:
-            raise Exception('No training data defined!')
+    def _get_dataset(self, dataset_name: str, include_metadata: bool = False):
+        if dataset_name not in self.datasets:
+            raise Exception(f'No {dataset_name} dataset defined!')
 
-        return self.datasets['training']
+        if include_metadata:
+            return self.datasets[dataset_name]
+        else:
+            df = self.datasets[dataset_name]
+            return df.loc[:, [self.target_column] + [c for c in df.columns if c in self.descriptor_names]]
 
-    def get_testing_data(self):
-        if 'testing' not in self.datasets:
-            raise Exception('No testing data defined!')
+    def has_training_data(self):
+        return 'training' in self.datasets
 
-        return self.datasets['testing']
+    def get_training_data(self, include_metadata: bool = False):
+        return self._get_dataset('training', include_metadata)
 
-    def get_validation_data(self):
-        if 'validation' not in self.datasets:
-            raise Exception('No validation data defined!')
+    def has_testing_data(self):
+        return 'testing' in self.datasets
 
-        return self.datasets['validation']
+    def get_testing_data(self, include_metadata: bool = False):
+        return self._get_dataset('testing', include_metadata)
+
+    def has_validation_data(self):
+        return 'validation' in self.datasets
+
+    def get_validation_data(self, include_metadata: bool = False):
+        return self._get_dataset('validation', include_metadata)

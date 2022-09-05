@@ -55,15 +55,36 @@ def test_gcn_dataset_load():
     assert len(data.get_validation_data()) == 50
 
 
-def test_descriptor_calculation():
+def test_descriptor_calculation_min():
     df = pd.read_csv('tests/data/data_retip.csv')
     data = Dataset().load_retip_dataset(df.head(5).copy())
-    data.calculate_descriptors()
+    assert len(data.get_training_data()) == 5
 
+    data.calculate_descriptors()
     assert 'ABC' in data.get_training_data().columns
 
     data.preprocess_features('metabolomics')
-    assert data.get_training_data().shape[1] == 821
+    assert data.get_training_data().shape[1] == 818
+    assert data.get_training_data(include_metadata=True).shape[1] == 821
 
     data.preprocess_features(['ABC'])
-    assert data.get_training_data().shape[1] == 5
+    assert data.get_training_data().shape[1] == 2
+    assert data.get_training_data(include_metadata=True).shape[1] == 5
+
+def test_descriptor_calculation_full_dataset():
+    df = pd.read_csv('tests/data/data_retip.csv')
+    data = Dataset().load_retip_dataset(df.head(10).copy())
+    data.split_dataset(test_split=0.2, validation_split=0.2, seed=123)
+
+    assert len(data.get_training_data()) == 6
+    assert len(data.get_testing_data()) == 2
+    assert len(data.get_validation_data()) == 2
+
+    data.calculate_descriptors()
+    assert 'ABC' in data.get_training_data().columns
+
+    data.preprocess_features('metabolomics')
+    assert data.get_training_data().shape[1] == 818
+
+    data.preprocess_features(['ABC'])
+    assert data.get_training_data().shape[1] == 2
