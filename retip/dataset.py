@@ -251,8 +251,7 @@ class Dataset:
         for k in self.datasets:
             self.datasets[k] = self.datasets[k].loc[:, columns]
         
-        print(f'Reduced feature set from {len(descriptor_cols)} to {len(columns) - len(metadata)}')
-        return self
+        print(f'Reduced feature set from {len(descriptor_cols)} to {len(columns) - len(metadata.columns)}')
 
 
     def head(self):
