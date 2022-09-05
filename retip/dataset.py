@@ -111,8 +111,17 @@ class Dataset:
             if missing_identifiers:
                 print(f'Warning: the {k} dataset is missing {missing_identifiers} structural identifiers - these rows will be ignored')
 
-        return self
 
+    def save_retip_dataset(self, filename_prefix: str, include_descriptors: bool = True):
+        """
+        """
+
+        for k, df in self.datasets.items():
+            if not include_descriptors:
+                df = df[df.columns.difference(self.descriptor_names)]
+
+            df.to_csv(f'{filename_prefix}_{k}.csv', index=False)
+            print(f'Saved {k} dataset to {filename_prefix}_{k}.csv')
 
     def split_dataset(self, test_split: float = 0.2, validation_split: float = 0, seed: int = None):
         """
