@@ -186,6 +186,7 @@ class Dataset:
 
                         with warnings.catch_warnings():
                             warnings.filterwarnings('ignore', category=DeprecationWarning)
+                            warnings.filterwarnings('ignore', category=RuntimeWarning)
 
                             desc = self.calc(mol)
                             desc = desc.fill_missing()
