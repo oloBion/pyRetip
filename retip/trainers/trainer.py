@@ -72,7 +72,8 @@ class Trainer:
         rt_error = y - y_pred
 
         if plot:
-            retip.plot_rt_scatter(y, y_pred, output_filename=plot_filename)
+            from .. import visualization
+            visualization.plot_rt_scatter(y, y_pred, output_filename=plot_filename)
 
         epsilon = np.finfo(np.float64).eps
 
@@ -105,10 +106,12 @@ class Trainer:
             y_pred = self.predictor.predict(self.filter_columns(df))
 
             if 'SMILES' in df.columns:
-                idx = df.df.columns.get_loc('SMILES')
+                idx = df.columns.get_loc('SMILES')
             else:
                 idx = 0
 
+            df = df.copy()
             df.insert(idx + 1, prediction_column, y_pred)
+            return df
         else:
             raise Exception(f'unsupported data format {type(df)}')

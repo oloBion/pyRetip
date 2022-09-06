@@ -32,9 +32,9 @@ class Dataset:
         self.descriptor_names = [str(d) for d in self.calc.descriptors]
 
 
-    def load_retip_dataset(self, training: Union[str, Path, pd.DataFrame], training_sheet_name: Union[str, int] = 0,
-                           testing: Union[str, Path, pd.DataFrame] = None, testing_sheet_name: Union[str, int] = 0,
-                           validation: Union[str, Path, pd.DataFrame] = None, validation_sheet_name: Union[str, int] = 0):
+    def load_retip_dataset(self, training: Union[str, Path, pd.DataFrame], testing: Union[str, Path, pd.DataFrame] = None,
+                           validation: Union[str, Path, pd.DataFrame] = None, training_sheet_name: Union[str, int] = 0,
+                           testing_sheet_name: Union[str, int] = 0, validation_sheet_name: Union[str, int] = 0):
         """
         """
 
@@ -47,7 +47,7 @@ class Dataset:
         if validation is not None:
             self.datasets['validation'] = self._load_dataframe(validation, validation_sheet_name)
 
-        self._validate_dataframe()
+        return self._validate_dataframe()
 
     def load_gcn_dataset(self, dataset: Union[str, Path, pd.DataFrame]):
         """
@@ -64,7 +64,7 @@ class Dataset:
         if (split_index == 4).any():
             self.datasets['validation'] = df[split_index == 4].reset_index(drop=True)
 
-        self._validate_dataframe()
+        return self._validate_dataframe()
 
     def _load_dataframe(self, dataset: Union[str, Path, pd.DataFrame], sheet_name: Union[str, int] = 0):
         """
@@ -110,6 +110,8 @@ class Dataset:
 
             if missing_identifiers:
                 print(f'Warning: the {k} dataset is missing {missing_identifiers} structural identifiers - these rows will be ignored')
+
+        return self
 
 
     def save_retip_dataset(self, filename_prefix: str, include_descriptors: bool = True):
@@ -220,7 +222,9 @@ class Dataset:
             features = df.loc[:, descriptor_cols]
 
             # filter descriptors by predefined subset if specified
-            if isinstance(descriptor_subset, str):
+            if descriptor_subset is None:
+                pass
+            elif isinstance(descriptor_subset, str):
                 # use only descriptors calculable for a given fraction of the given chemical dataset
                 if descriptor_subset in ['metabolomics', 'lipidomics']:
                     descriptor_counts = json.loads(pkgutil.get_data(__package__, f'data/{descriptor_subset}_descriptors_counts.json'))

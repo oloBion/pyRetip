@@ -6,8 +6,8 @@ from bokeh.models import Slope
 from bokeh.plotting import figure
 from bokeh.io import export_png
 
-import retip
-
+from . import Dataset
+from .trainers import Trainer
 
 def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
     if not output_filename:
@@ -34,7 +34,7 @@ def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
         show(p)
 
 
-def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confidence_interval: float = 90, output_filename: str = None):
+def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column: str, confidence_interval: float = 90, output_filename: str = None):
     """
     """
 
@@ -44,9 +44,9 @@ def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confi
         output_notebook()
     
     # predict RT
-    data = dataset.get_data()
-    X = data.drop('RT', axis=1)
-    y = data.RT.values
+    data = dataset.get_training_data()
+    X = data.drop(dataset.target_column, axis=1)
+    y = data[dataset.target_column].values
 
     y_pred = trainer.predict(X)
     rt_error = y - y_pred
@@ -70,8 +70,8 @@ def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confi
 
     # plot
     p = figure()
-    p.xaxis.axis_label = 'Library RT'
-    p.yaxis.axis_label = 'Predicted RT'
+    p.xaxis.axis_label = f'Experimental {dataset.target_column}'
+    p.yaxis.axis_label = f'Predicted {dataset.target_column}'
     p.scatter(y_df[y_df.in_ci].y, y_df[y_df.in_ci].y_pred, size=3)
     p.scatter(y_df[~y_df.in_ci].y, y_df[~y_df.in_ci].y_pred, size=3, color='red', legend_label='Outliers')
 
@@ -91,12 +91,13 @@ def outlier_identification(trainer: retip.Trainer, dataset: retip.Dataset, confi
         show(p)
 
     # return annotated dataframe and outliers
-    annotated = dataset.df[[c for c in dataset.df.columns if c in ['Name', 'InChIKey', 'SMILES', 'RT']]].copy()
-    annotated['RTP'] = y_pred
+    annotated = dataset.get_training_data(include_metadata=True)
+    annotated = annotated[[c for c in annotated.columns if c in ['Name', 'InChIKey', 'SMILES', 'RT']]].copy()
+    annotated[prediction_column] = y_pred
 
     df = dataset.df[['Name', 'RT']]
     df_rtp = y_df[~y_df.in_ci][['y_pred']]
-    df_rtp.columns = ['RTP']
+    df_rtp.columns = [prediction_column]
     outliers = df.join(df_rtp, how='inner')
     
     return annotated, outliers
