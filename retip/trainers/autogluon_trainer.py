@@ -14,17 +14,21 @@ from . import Trainer
 
 
 class AutoGluonTrainer(Trainer):
-    def __init__(self, dataset: Dataset = None, training_duration: int = 60, preset: str = 'high_quality'):
+    def __init__(self, dataset: Dataset = None, training_duration: int = None, preset: str = 'high_quality'):
         """
         """
 
         super().__init__(dataset)
 
         if not importlib.util.find_spec('autogluon'):
-            raise Exception('AutoGluon is not properly installed!')
+            raise ImportError('AutoGluon is not properly installed!')
 
-        self.training_duration = training_duration
         self.preset = preset
+
+        if training_duration is not None:
+            self.training_duration = 60 * training_duration
+        else:
+            self.training_duration = None
 
 
     def save_model(self, filename: str):
@@ -50,7 +54,7 @@ class AutoGluonTrainer(Trainer):
             self.predictor = TabularPredictor(label=self.dataset.target_column)
             self.predictor.fit(
                 train_data=training_data,
-                time_limit=60 * self.training_duration,
+                time_limit=self.training_duration,
                 presets=self.preset
             )
 

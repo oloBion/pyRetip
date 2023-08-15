@@ -258,7 +258,7 @@ class Dataset:
         print(f'Reduced feature set from {len(descriptor_cols)} to {len(columns) - len(metadata.columns)}')
 
 
-    def head(self):
+    def head(self, n: int = 5):
         """
         """
         
@@ -267,7 +267,8 @@ class Dataset:
 
         for k, df in self.datasets.items():
             print(k.title())
-            print(df.head())
+            print(df.head(n))
+            print()
 
     def describe(self):
         """

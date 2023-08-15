@@ -31,7 +31,7 @@ class Trainer:
 
 
     def filter_columns(self, df):
-        if hasattr(self, 'model_columns'):
+        if self.model_columns is not None:
             return df[[c for c in df.columns if c in self.model_columns]]
         else:
             return df
