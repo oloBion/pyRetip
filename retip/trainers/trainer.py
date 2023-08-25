@@ -48,7 +48,7 @@ class Trainer:
         """
 
         if isinstance(data, Dataset):
-            X = data.get_data()
+            X = data.get_training_data()
             return self.predictor.predict(self.filter_columns(X))
         elif isinstance(data, pd.DataFrame):
             return self.predictor.predict(self.filter_columns(data))
