@@ -90,10 +90,6 @@ class Dataset:
         """
 
         for k, df in self.datasets.items():
-            # ensure that the target column is present
-            if self.target_column not in df.columns:
-                raise Exception(f'Target column "{self.target_column}" was not found in the {k} dataset')
-
             # ensure that at least one identifier column is present
             identifier_cols = [x for x in IDENTIFIER_COLUMNS if x in df.columns]
 
@@ -289,7 +285,8 @@ class Dataset:
             return self.datasets[dataset_name]
         else:
             df = self.datasets[dataset_name]
-            return df.loc[:, [self.target_column] + [c for c in df.columns if c in self.descriptor_names]]
+            base = [self.target_column] if self.target_column in df.columns else []
+            return df.loc[:, base + [c for c in df.columns if c in self.descriptor_names]]
 
     def has_training_data(self):
         return 'training' in self.datasets

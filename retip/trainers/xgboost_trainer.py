@@ -55,7 +55,7 @@ class XGBoostTrainer(Trainer):
             raise Exception(f'{filename} is an invalid XGBoost model export')
 
 
-    def train(self, verbosity: int = 1):
+    def do_train(self, verbosity: int = 1):
         if self.dataset is not None:
             training_data = self.dataset.get_training_data()
             X_train = training_data.drop(self.dataset.target_column, axis=1)

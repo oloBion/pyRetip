@@ -26,9 +26,16 @@ class Trainer:
         pass
 
     @abc.abstractmethod
-    def train(self):
+    def do_train(self):
         pass
 
+    def train(self):
+        for k, df in self.dataset.datasets.items():
+            # ensure that the target column is present
+            if self.target_column not in df.columns:
+                raise Exception(f'Target column "{self.target_column}" was not found in the {k} dataset')
+
+        self.do_train()
 
     def filter_columns(self, df):
         if self.model_columns is not None:

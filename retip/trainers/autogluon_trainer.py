@@ -45,7 +45,7 @@ class AutoGluonTrainer(Trainer):
         print(f'Loaded {filename}')
 
 
-    def train(self):
+    def do_train(self):
         if self.dataset is not None:
             t = time.time()
 
