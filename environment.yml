@@ -1,23 +1,23 @@
-name: retip
+name: pyretip
 channels:
   - conda-forge
 dependencies:
   - python=3.10
   - mordredcommunity
-  - tqdm
-  - selenium
-  - geckodriver
+  - tqdm==4.66.4
+  - selenium==4.21.0
+  - geckodriver==0.34.0
   - pip
   - pip:
-    - autogluon==0.8.2
-    - numpy
-    - scipy
-    - pandas
-    - openpyxl
-    - scikit-learn
-    - xgboost
-    - joblib
-    - jupyter
-    - pubchempy
-    - bokeh
-    - tqdm
+    - autogluon==1.1.0
+    - numpy==1.26.4
+    - scipy==1.12.0
+    - pandas==2.2.2
+    - openpyxl=3.1.2
+    - scikit-learn==1.4.0
+    - xgboost==2.0.3
+    - joblib==1.4.2
+    - jupyter==1.0.0
+    - pubchempy==1.0.4
+    - bokeh==3.4.1
+    - tqdm==4.66.4

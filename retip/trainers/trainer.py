@@ -16,7 +16,6 @@ class Trainer:
         self.predictor = None
         self.model_columns = None
 
-
     @abc.abstractmethod
     def save_model(self, filename: str):
         pass
@@ -32,8 +31,8 @@ class Trainer:
     def train(self):
         for k, df in self.dataset.datasets.items():
             # ensure that the target column is present
-            if self.target_column not in df.columns:
-                raise Exception(f'Target column "{self.target_column}" was not found in the {k} dataset')
+            if self.dataset.target_column not in df.columns:
+                raise Exception(f'Target column "{self.dataset.target_column}" was not found in the {k} dataset')
 
         self.do_train()
 
