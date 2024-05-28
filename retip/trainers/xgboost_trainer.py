@@ -32,7 +32,7 @@ class XGBoostTrainer(Trainer):
 
 
     def save_model(self, filename: str):
-        if hasattr(self, 'model'):
+        if hasattr(self, 'predictor'):
             export = {
                 'model_name': 'XGBoost',
                 'model_columns': self.model_columns,

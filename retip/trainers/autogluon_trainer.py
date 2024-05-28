@@ -32,7 +32,7 @@ class AutoGluonTrainer(Trainer):
 
 
     def save_model(self, filename: str):
-        if hasattr(self, 'model'):
+        if hasattr(self, 'predictor'):
             model_dir = self.predictor._learner.path
             shutil.move(model_dir, filename)
 
