@@ -7,6 +7,7 @@ import sklearn.metrics as metrics
 from typing import Union
 
 from .. import Dataset
+import h2o
 
 
 
@@ -47,9 +48,16 @@ class Trainer:
         """
 
         if isinstance(data, Dataset):
-            X = data.get_training_data()
+            if isinstance(self.predictor, (h2o.automl.H2OAutoML, h2o.estimators.H2OEstimator)):
+                X = h2o.H2OFrame(data.get_training_data())
+            else:                
+                X = data.get_training_data()
             return self.predictor.predict(self.filter_columns(X))
         elif isinstance(data, pd.DataFrame):
+            if isinstance(self.predictor, (h2o.automl.H2OAutoML, h2o.estimators.H2OEstimator)):
+                data = h2o.H2OFrame(data)
+            return self.predictor.predict(self.filter_columns(data))
+        elif isinstance(data, h2o.H2OFrame):
             return self.predictor.predict(self.filter_columns(data))
         else:
             raise Exception(f'Unsupported data format {type(data)}')
@@ -60,22 +68,36 @@ class Trainer:
 
         if data is None:
             if self.dataset is not None:
-                data = self.dataset.get_testing_data()
+                if isinstance(self.predictor, (h2o.automl.H2OAutoML, h2o.estimators.H2OEstimator)):
+                    data = h2o.H2OFrame(self.dataset.get_testing_data())
+                else:  
+                    data = self.dataset.get_testing_data()
                 target_column = self.dataset.target_column
             else:
                 raise Exception('trainer has no associated dataset and so it must be provided to the score method')
         elif isinstance(data, Dataset):
-            data = data.get_data()
+            if isinstance(self.predictor, (h2o.automl.H2OAutoML, h2o.estimators.H2OEstimator)):
+                data = h2o.H2OFrame(data.get_data())
+            else:
+                data = data.get_data()
             target_column = data.target_column
         elif isinstance(data, pd.DataFrame):
+            if isinstance(self.predictor, (h2o.automl.H2OAutoML, h2o.estimators.H2OEstimator)):
+                data = h2o.H2OFrame(data)
             if target_column is None:
                 raise Exception('target column name must be provided when scoring a data frame')
         else:
             raise Exception(f'unsupported data format {type(data)}')
 
-        y = data[target_column].values
-        y_pred = self.predict(data)
-        rt_error = y - y_pred
+        if isinstance(self.predictor, (h2o.automl.H2OAutoML, h2o.estimators.H2OEstimator)):
+            with h2o.utils.threading.local_context(polars_enabled=True, datatable_enabled=True):
+                y = data.as_data_frame()[target_column].values
+                y_pred = self.predict(data).as_data_frame()["predict"].values
+                rt_error = y - y_pred
+        else:
+            y = data[target_column].values
+            y_pred = self.predict(data)
+            rt_error = y - y_pred
 
         if plot:
             from .. import visualization
@@ -109,7 +131,13 @@ class Trainer:
             if prediction_column in df.columns:
                 raise Exception(f'{prediction_column} column already exists!')
 
-            y_pred = self.predictor.predict(self.filter_columns(df))
+            if not isinstance(self.predictor, h2o.automl.H2OAutoML):
+                y_pred = self.predictor.predict(self.filter_columns(df))
+            else:
+                df_h2o = h2o.H2OFrame(df)
+                y_pred = self.predictor.predict(self.filter_columns(df_h2o))
+                with h2o.utils.threading.local_context(polars_enabled=True, datatable_enabled=True):
+                    y_pred = y_pred.as_data_frame()
 
             if 'SMILES' in df.columns:
                 idx = df.columns.get_loc('SMILES')
