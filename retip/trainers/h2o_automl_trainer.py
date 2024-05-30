@@ -12,7 +12,7 @@ from . import Trainer
 
 
 class H2OautoMLTrainer(Trainer):
-    def __init__(self, dataset: Dataset = None, training_duration: int = None, max_models: int = 20, nfolds: int = 5):
+    def __init__(self, dataset: Dataset = None, training_duration: int = None, max_models: int = 20, nfolds: int = -1):
         """
         """
 
@@ -29,14 +29,18 @@ class H2OautoMLTrainer(Trainer):
         else:
             self.training_duration = 60
 
+    def get_model(self, model_num: int = 0):
+        lb_length = len(self.leaderboard)
+        if 0 <= model_num < lb_length:
+            mdl = h2o.get_model(self.leaderboard[model_num, "model_id"])
+        else:
+            raise Exception(f'Model has {lb_length} options. Select a model number between 0 and {lb_length-1}.')
+        return mdl
+
     def save_model(self, model_num: int = 0, filename: str = None):
         if hasattr(self, 'predictor'):
-            lb_length = len(self.leaderboard)
-            if 0 <= model_num < lb_length:
-                mdl = h2o.get_model(self.leaderboard[model_num, "model_id"])
-                h2o.save_model(mdl, filename=filename, force=True)
-            else:
-                raise Exception(f'Model has {lb_length} options. Select a model number between 0 and {lb_length-1}.')
+            mdl = self.get_model(model_num)
+            h2o.save_model(mdl, filename=filename, force=True)
         else:
             raise Exception('Model has not been trained!')
 
@@ -73,3 +77,9 @@ class H2OautoMLTrainer(Trainer):
             print(f'Training completed in {elapsed_time} with best RMSE {best_score:.3f}')
         else:
             raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
+
+    def _predict(self, data):
+        data = h2o.H2OFrame(data)
+        with h2o.utils.threading.local_context(polars_enabled=True, datatable_enabled=True):
+            predicted = self.predictor.predict(data).as_data_frame()["predict"].values
+        return predicted
