@@ -1,3 +1,8 @@
 __pycache__
 .ipynb_checkpoints
 AutogluonModels
+notebooks/lipidomics/lipidomics_c18_retip_preprocessed_testing.csv
+notebooks/lipidomics/lipidomics_c18_retip_preprocessed_training.csv
+notebooks/metabolomics/Plasma_positive_retip_processed_testing.csv
+notebooks/metabolomics/Plasma_positive_retip_processed_training.csv
+notebooks/metabolomics/Plasma_positive_retip_processed_validation.csv
