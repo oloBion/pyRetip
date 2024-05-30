@@ -24,7 +24,7 @@ class RandomForestTrainer(Trainer):
             export = {
                 'model_name': 'RandomForest',
                 'model_columns': self.model_columns,
-                'model': self.predictor
+                'predictor': self.predictor
             }
             joblib.dump(export, filename)
             print(f'Exported model to {filename}')

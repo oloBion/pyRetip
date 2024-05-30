@@ -36,7 +36,7 @@ class XGBoostTrainer(Trainer):
             export = {
                 'model_name': 'XGBoost',
                 'model_columns': self.model_columns,
-                'model': self.predictor.best_estimator_
+                'predictor': self.predictor.best_estimator_
             }
 
             joblib.dump(export, filename)
