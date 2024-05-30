@@ -34,7 +34,7 @@ def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
         show(p)
 
 
-def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column: str, confidence_interval: float = 90, output_filename: str = None):
+def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column: str, confidence_interval: float = 95, output_filename: str = None):
     """
     """
 
@@ -95,7 +95,7 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column
     annotated = annotated[[c for c in annotated.columns if c in ['Name', 'InChIKey', 'SMILES', 'RT']]].copy()
     annotated[prediction_column] = y_pred
 
-    df = dataset.df[['Name', 'RT']]
+    df = annotated[['Name', 'RT']]
     df_rtp = y_df[~y_df.in_ci][['y_pred']]
     df_rtp.columns = [prediction_column]
     outliers = df.join(df_rtp, how='inner')
