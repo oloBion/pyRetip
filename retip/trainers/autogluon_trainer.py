@@ -50,6 +50,8 @@ class AutoGluonTrainer(Trainer):
             t = time.time()
 
             training_data = self.dataset.get_training_data()
+            self.model_columns = list(filter(lambda x: x!=self.dataset.target_column,
+                                             training_data.columns))
 
             self.predictor = TabularPredictor(label=self.dataset.target_column)
             self.predictor.fit(
