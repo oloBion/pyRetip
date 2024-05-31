@@ -3,6 +3,7 @@ import importlib
 import pandas as pd
 import shutil
 import time
+from typing import Union
 
 try:
     from autogluon.tabular import TabularPredictor
@@ -68,3 +69,26 @@ class AutoGluonTrainer(Trainer):
             print(f'Training completed in {elapsed_time} with best RMSE {best_score:.3f}')
         else:
             raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
+
+    def feature_importance(self, data: Union[Dataset, pd.DataFrame] = None):
+        if hasattr(self, 'predictor'):
+            if data is None:
+                if self.dataset is not None:
+                    data = self.dataset.get_training_data()
+                else:
+                    raise Exception('Trainer has no associated dataset and so it must be provided to get feature importance')
+            elif isinstance(data, Dataset):
+                raise Exception('Please specify one dataset from the training, testing, or validation subsets of the Dataset object.')
+            elif isinstance(data, pd.DataFrame):
+                pass
+            else:
+                raise Exception(f'Unsupported data format {type(data)}')
+
+            df = self.predictor.feature_importance(data)
+            df.sort_values(by="importance", ascending=False, inplace=True)
+            df.reset_index(inplace=True)
+            df.rename(columns={"index": "feature"}, inplace=True)
+            df = df.loc[:, ("feature", "importance")]
+            return df
+        else:
+            raise Exception('Model has not been trained!')

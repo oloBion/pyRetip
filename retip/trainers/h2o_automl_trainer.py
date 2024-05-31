@@ -81,3 +81,16 @@ class H2OautoMLTrainer(Trainer):
         with h2o.utils.threading.local_context(polars_enabled=True, datatable_enabled=True):
             predicted = self.predictor.predict(data).as_data_frame()["predict"].values
         return predicted
+    
+    def feature_importance(self):
+        if hasattr(self, 'predictor'):
+            df = self.predictor.varimp(use_pandas=True)
+            df.rename(columns={"variable": "feature",
+                               "relative_importance": "importance"},
+                      inplace=True)
+            df = df.loc[:, ("feature", "importance")]
+            df.sort_values(by="importance", ascending=False, inplace=True)
+            df.reset_index(inplace=True, drop=True)
+            return df
+        else:
+            raise Exception('Model has not been trained!')

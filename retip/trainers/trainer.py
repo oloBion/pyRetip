@@ -66,15 +66,14 @@ class Trainer:
                 data = self.dataset.get_testing_data()
                 target_column = self.dataset.target_column
             else:
-                raise Exception('trainer has no associated dataset and so it must be provided to the score method')
+                raise Exception('Trainer has no associated dataset and so it must be provided to the score method')
         elif isinstance(data, Dataset):
-            data = data.get_data()
-            target_column = data.target_column
+            raise Exception('Please specify one dataset from the training, testing, or validation subsets of the Dataset object.')
         elif isinstance(data, pd.DataFrame):
             if target_column is None:
-                raise Exception('target column name must be provided when scoring a data frame')
+                raise Exception('Target column name must be provided when scoring a data frame')
         else:
-            raise Exception(f'unsupported data format {type(data)}')
+            raise Exception(f'Unsupported data format {type(data)}')
 
         y = data[target_column].values
         y_pred = self.predict(data)

@@ -1,6 +1,7 @@
 import datetime
 import joblib
 import time
+import pandas as pd
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
@@ -36,7 +37,7 @@ class RandomForestTrainer(Trainer):
 
         if isinstance(export, dict) and export.get('model_name') == 'RandomForest':
             self.model_columns = export['model_columns']
-            self.predictor = export['model']
+            self.predictor = export['predictor']
             print(f'Loaded {filename}')
         else:
             raise Exception(f'{filename} is an invalid Random Forest model export')
@@ -62,4 +63,13 @@ class RandomForestTrainer(Trainer):
             print(f'Training completed in {elapsed_time} with best R\U000000B2 {self.predictor.oob_score_:.3f}')
         else:
             raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
-        
+
+    def feature_importance(self):
+        if hasattr(self, 'predictor'):
+            df = pd.DataFrame({"feature": self.model_columns,
+                               "importance": self.predictor.feature_importances_})
+            df.sort_values(by="importance", ascending=False, inplace=True)
+            df.reset_index(inplace=True, drop=True)
+            return df
+        else:
+            raise Exception('Model has not been trained!')
