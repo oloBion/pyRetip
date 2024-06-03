@@ -167,21 +167,30 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column
     
     return annotated, outliers
 
-def plot_feature_importance(trainer: Trainer, dataset: Union[Dataset, pd.DataFrame] = None, output_filename: str = None):
+def plot_feature_importance(trainer: Trainer, dataset: Union[Dataset, pd.DataFrame] = None, model_num: int = None, output_filename: str = None):
     if not output_filename:
         # view the plot in a Jupyter notebook
         from bokeh.io import output_notebook, show
         output_notebook()
-    
-    if dataset is not None:
-        df = trainer.feature_importance(dataset)
+
+    if model_num is not None:
+        df = trainer.get_feature_importance(model_num)
+    elif dataset is not None:
+        df = trainer.get_feature_importance(dataset)
     else:
-        df = trainer.feature_importance()
+        df = trainer.get_feature_importance()
+    if isinstance(df, tuple):
+        mdl_id = df[1]
+        df = df[0]
+        title = "Feature importance (top 20) - %s \n" % mdl_id
+    else:
+        df = df
+        title = "Feature importance (top 20)"
     df = df.iloc[0:20, :]
     df.sort_values(by="importance", inplace=True)
     source = ColumnDataSource(data=df)
 
-    p = figure(y_range=df["feature"], title="Feature importance (top 20) \n")
+    p = figure(y_range=df["feature"], title=title)
     p.hbar(y="feature", right="importance", source=source, height=0.8,
            fill_color="#D02937", line_color = '#D02937')
     

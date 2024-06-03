@@ -11,7 +11,7 @@ from . import Trainer
 
 
 class XGBoostTrainer(Trainer):
-    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = None, n_jobs: int = 1):
+    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = None, n_jobs: int = -1):
         """
         """
 
@@ -37,6 +37,7 @@ class XGBoostTrainer(Trainer):
             export = {
                 'model_name': 'XGBoost',
                 'model_columns': self.model_columns,
+                'feature_importance': self.feature_importance,
                 'predictor': self.predictor.best_estimator_
             }
 
@@ -50,6 +51,7 @@ class XGBoostTrainer(Trainer):
 
         if isinstance(export, dict) and export.get('model_name') == 'XGBoost':
             self.model_columns = export['model_columns']
+            self.feature_importance = export['feature_importance']
             self.predictor = export['predictor']
             print(f'Loaded {filename}')
         else:
@@ -74,15 +76,17 @@ class XGBoostTrainer(Trainer):
                 n_jobs=self.n_jobs
             ).fit(X_train, y_train)
 
+            self.feature_importance = self.predictor.best_estimator_.feature_importances_
+
             elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
             print(f'Training completed in {elapsed_time} with best RMSE {self.predictor.best_score_:.3f}')
         else:
             raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
 
-    def feature_importance(self):
+    def get_feature_importance(self):
         if hasattr(self, 'predictor'):
             df = pd.DataFrame({"feature": self.model_columns,
-                               "importance": self.predictor.feature_importances_})
+                               "importance": self.feature_importance})
             df.sort_values(by="importance", ascending=False, inplace=True)
             df.reset_index(inplace=True, drop=True)
             return df

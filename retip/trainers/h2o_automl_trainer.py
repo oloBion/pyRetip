@@ -27,13 +27,18 @@ class H2OautoMLTrainer(Trainer):
         else:
             self.training_duration = 60
 
-    def get_model(self, model_num: int = 0):
+    def get_model(self, model_num: int = 0, model_id: bool = False):
+        print(model_num)
         lb_length = len(self.leaderboard)
         if 0 <= model_num < lb_length:
-            mdl = h2o.get_model(self.leaderboard[model_num, "model_id"])
+            mdl_id = self.leaderboard[model_num, "model_id"]
+            mdl = h2o.get_model(mdl_id)
         else:
             raise Exception(f'Model has {lb_length} options. Select a model number between 0 and {lb_length-1}.')
-        return mdl
+        if model_id:
+            return mdl, mdl_id
+        else: 
+            return mdl
 
     def save_model(self, model_num: int = 0, filename: str = None):
         if hasattr(self, 'predictor'):
@@ -43,8 +48,11 @@ class H2OautoMLTrainer(Trainer):
             raise Exception('Model has not been trained!')
 
     def load_model(self, filename: str):
-        h2o.init()
+        h2o.init(verbose=False)
         self.predictor = h2o.load_model(filename)
+        self.leader = self.predictor
+        self.leaderboard = None
+        self.loaded = True
         print(f'Loaded {filename}')
 
     def do_train(self):
@@ -55,15 +63,19 @@ class H2OautoMLTrainer(Trainer):
             self.model_columns = list(filter(lambda x: x!=self.dataset.target_column,
                                              training_data.columns))
 
-            h2o.init() # here?
+            h2o.init(verbose=False)
             self.predictor = H2OAutoML(max_runtime_secs = self.training_duration,
                                        max_models=self.max_models,
-                                       nfolds=self.nfolds)
+                                       nfolds=self.nfolds,
+                                       seed=1,
+                                       verbosity="info")
             self.predictor.train(
                 x = self.model_columns,
                 y = self.dataset.target_column,
                 training_frame = h2o.H2OFrame(training_data)
             )
+
+            self.loaded = False
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
 
@@ -82,15 +94,20 @@ class H2OautoMLTrainer(Trainer):
             predicted = self.predictor.predict(data).as_data_frame()["predict"].values
         return predicted
     
-    def feature_importance(self):
+    def get_feature_importance(self, model_num: int = 0):
         if hasattr(self, 'predictor'):
-            df = self.predictor.varimp(use_pandas=True)
+            if self.loaded:
+                df = self.predictor.varimp(use_pandas=True)
+                mdl_id = self.predictor.key
+            else:
+                mdl, mdl_id = self.get_model(model_num, model_id=True)
+                df = mdl.varimp(use_pandas=True)
             df.rename(columns={"variable": "feature",
                                "relative_importance": "importance"},
                       inplace=True)
             df = df.loc[:, ("feature", "importance")]
             df.sort_values(by="importance", ascending=False, inplace=True)
             df.reset_index(inplace=True, drop=True)
-            return df
+            return df, mdl_id
         else:
             raise Exception('Model has not been trained!')

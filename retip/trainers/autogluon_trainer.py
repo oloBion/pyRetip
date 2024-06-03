@@ -70,7 +70,7 @@ class AutoGluonTrainer(Trainer):
         else:
             raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
 
-    def feature_importance(self, data: Union[Dataset, pd.DataFrame] = None):
+    def get_feature_importance(self, data: Union[Dataset, pd.DataFrame] = None):
         if hasattr(self, 'predictor'):
             if data is None:
                 if self.dataset is not None:
