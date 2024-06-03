@@ -29,4 +29,4 @@ Run `conda activate pyretip` followed by `jupyter lab`. Then, open the [notebook
 
 ### Windows
 
-Run `conda activate pyretip` and install the `curses` dependency by running `pip install windows-curses`. Then, run `jupyter lab` to open the [notebooks folder](https://github.com/oloBion/pyRetip/tree/master/notebooks) to start working through code examples to learn how Retip works.
+Run `conda activate pyretip` and install the `curses` dependency by running `pip install windows-curses`. Then, run `jupyter lab` and open the [notebooks folder](https://github.com/oloBion/pyRetip/tree/master/notebooks) to start working through code examples to learn how Retip works.
