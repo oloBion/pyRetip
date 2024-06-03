@@ -63,7 +63,9 @@ class Trainer:
 
         if data is None:
             if self.dataset is not None:
-                data = self.dataset.get_testing_data()
+                data = self.dataset.get_testing_data(include_metadata=True)
+                mtdata = data["Name"]
+                data = data.drop(['Name', 'InChIKey', 'SMILES'], axis=1)
                 target_column = self.dataset.target_column
             else:
                 raise Exception('Trainer has no associated dataset and so it must be provided to the score method')
@@ -72,6 +74,12 @@ class Trainer:
         elif isinstance(data, pd.DataFrame):
             if target_column is None:
                 raise Exception('Target column name must be provided when scoring a data frame')
+            for col in ['Name', 'InChIKey', 'SMILES']:
+                if col in data.columns:
+                    if col == "Name":
+                        mtdata = data["Name"]
+                    data = data.drop(col, axis=1)
+            
         else:
             raise Exception(f'Unsupported data format {type(data)}')
 
@@ -81,7 +89,11 @@ class Trainer:
 
         if plot:
             from .. import visualization
-            visualization.plot_rt_scatter(y, y_pred, output_filename=plot_filename)
+            if "mtdata" in locals():
+                df_pred = pd.DataFrame({"Name": mtdata, "y": y, "y_pred": y_pred})
+            else:
+                df_pred = pd.DataFrame({"y": y, "y_pred": y_pred})
+            visualization.plot_rt_scatter(df_pred, output_filename=plot_filename)
 
         epsilon = np.finfo(np.float64).eps
 

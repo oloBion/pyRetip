@@ -10,17 +10,17 @@ from bokeh.io import export_png
 from . import Dataset
 from .trainers import Trainer
 
-def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
+def plot_rt_scatter(df, output_filename: str = None):
     if not output_filename:
         # view the plot in a Jupyter notebook
         from bokeh.io import output_notebook, show
         output_notebook()
 
     # calculate linear fit
-    slope, intercept = np.polyfit(rt, rt_pred, 1)
+    slope, intercept = np.polyfit(df.y, df.y_pred, 1)
 
     p = figure()
-    p.scatter(rt, rt_pred, size=3, color="#5E676F")
+    p.scatter("y", "y_pred", size=3, color="#5E676F", source=df)
 
     p.add_layout(Slope(gradient=1, y_intercept=0, line_width=1, line_color='#384049', line_alpha=0.5))
     p.add_layout(Slope(gradient=slope, y_intercept=intercept, line_color='#D02937'))
@@ -44,6 +44,23 @@ def plot_rt_scatter(rt, rt_pred, output_filename: str = None):
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
 
+    # Hover data
+    hover = HoverTool()
+    if "Name" in df.columns:
+        hover.tooltips = """
+            <div>
+                <span style="font-weight: bold; color: #384049;">@Name<br></span>
+                <span style="color: #384049;">@y, @y_pred<br></span>
+            </div>
+        """
+    else:
+        hover.tooltips = """
+            <div>
+                <span style="color: #384049;">@y, @y_pred<br></span>
+            </div>
+        """
+    p.add_tools(hover)
+
     if output_filename:
         if not output_filename.lower().endswith('.png'):
             output_filename += '.png'
@@ -62,8 +79,8 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column
         output_notebook()
     
     # predict RT
-    data = dataset.get_training_data()
-    X = data.drop(dataset.target_column, axis=1)
+    data = dataset.get_training_data(include_metadata=True)
+    X = data.drop(['Name', 'InChIKey', 'SMILES', dataset.target_column], axis=1)
     y = data[dataset.target_column].values
 
     y_pred = trainer.predict(X)
@@ -85,19 +102,22 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column
 
     y_df = pd.DataFrame({'y': y, 'y_pred': y_pred}, index=X.index)
     y_df['in_ci'] = y_df.apply(is_in_ci, axis=1)
+    y_df = pd.merge(data["Name"], y_df, left_index=True, right_index=True)
+    source_ann = y_df[y_df.in_ci]
+    source_out = y_df[~y_df.in_ci]
 
     # plot
     p = figure()
     p.xaxis.axis_label = f'Experimental {dataset.target_column}'
     p.yaxis.axis_label = f'Predicted {dataset.target_column}'
-    p.scatter(y_df[y_df.in_ci].y, y_df[y_df.in_ci].y_pred, size=3, color="#5E676F")
-    p.scatter(y_df[~y_df.in_ci].y, y_df[~y_df.in_ci].y_pred, size=3, color='#7A2120', legend_label='Outliers')
+    p.scatter('y', 'y_pred', size=3, color="#5E676F", source=source_ann)
+    p.scatter('y', 'y_pred', size=3, color='#D02937', legend_label='Outliers', source=source_out)
 
     p.add_layout(Slope(gradient=1, y_intercept=0, line_width=1, line_color='#384049', line_alpha=0.5))
 
-    p.add_layout(Slope(gradient=slope, y_intercept=intercept, line_color='#D02937'))
-    p.add_layout(Slope(gradient=slope, y_intercept=intercept + ci, line_color='#D02937', line_dash='dashed', line_alpha=0.75))
-    p.add_layout(Slope(gradient=slope, y_intercept=intercept - ci, line_color='#D02937', line_dash='dashed', line_alpha=0.75))
+    p.add_layout(Slope(gradient=slope, y_intercept=intercept, line_color='#092DF7'))
+    p.add_layout(Slope(gradient=slope, y_intercept=intercept + ci, line_color='#092DF7', line_dash='dashed', line_alpha=0.75))
+    p.add_layout(Slope(gradient=slope, y_intercept=intercept - ci, line_color='#092DF7', line_dash='dashed', line_alpha=0.75))
 
     p.legend.location = "top_left"
 
@@ -118,6 +138,16 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
 
+    # Hover data
+    hover = HoverTool()
+    hover.tooltips = """
+        <div>
+            <span style="font-weight: bold; color: #384049;">@Name<br></span>
+            <span style="color: #384049;">@y, @y_pred<br></span>
+        </div>
+    """
+    p.add_tools(hover)
+
     if output_filename:
         if not output_filename.lower().endswith('.png'):
             output_filename += '.png'
@@ -126,11 +156,11 @@ def outlier_identification(trainer: Trainer, dataset: Dataset, prediction_column
         show(p)
 
     # return annotated dataframe and outliers
-    annotated = dataset.get_training_data(include_metadata=True)
-    annotated = annotated[[c for c in annotated.columns if c in ['Name', 'InChIKey', 'SMILES', 'RT']]].copy()
+    annotated = data
+    annotated = annotated[[c for c in annotated.columns if c in ['Name', 'InChIKey', 'SMILES', dataset.target_column]]].copy()
     annotated[prediction_column] = y_pred
 
-    df = annotated[['Name', 'RT']]
+    df = annotated[['Name', dataset.target_column]]
     df_rtp = y_df[~y_df.in_ci][['y_pred']]
     df_rtp.columns = [prediction_column]
     outliers = df.join(df_rtp, how='inner')
