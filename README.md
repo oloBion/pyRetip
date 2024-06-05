@@ -2,7 +2,7 @@
 
 # Retip - Retention Time Prediction for Metabolomics
 
-**Retip** is a tool for predicting Retention Time (RT) for small molecules in a high pressure liquid chromatography (HPLC) Mass Spectrometry analysis, available as both a **Python package** and an [**R package**](https://github.com/olobion/Retip/tree/master). Retention time calculation can be useful in identifying unknowns and removing false positive annotations. It uses four different machine learning algorithms to built a stable, accurate and fast RT prediction model:
+**Retip** is a tool for predicting Retention Time (RT) for small molecules in a high pressure liquid chromatography (HPLC) Mass Spectrometry analysis, available as both a [**Python package**](https://github.com/oloBion/pyRetip/tree/master) and an [**R package**](https://github.com/olobion/Retip/tree/master). Retention time calculation can be useful in identifying unknowns and removing false positive annotations. The [**Python package**](https://github.com/oloBion/pyRetip/tree/master) uses four different machine learning algorithms to built a stable, accurate and fast RT prediction model:
 
 - **Random Forest:** a decision tree algorithms.
 - **XGBoost:** an extreme Gradient Boosting for tree algorithms.
