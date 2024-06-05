@@ -11,7 +11,7 @@
 
 ## Retip installation
 
-Retip 2.0 requires Python 3.1.0 and it is recommended to use the [Anaconda](https://www.anaconda.com/download/), [miniconda](https://conda.io/miniconda.html) or [Mamba](https://mamba.readthedocs.io) package managers to easily install and run the package.
+Retip 2.0 requires Python 3.10 and it is recommended to use the [Anaconda](https://www.anaconda.com/download/), [miniconda](https://conda.io/miniconda.html) or [Mamba](https://mamba.readthedocs.io) package managers to easily install and run the package.
 
 Once Anaconda is installed, simply check out the Retip repository and create an environment named `pyretip`:
 
