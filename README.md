@@ -1,19 +1,17 @@
 ![Retip](images/retip_logo.png)
 
-# Retip: Retention Time Prediction for Metabolomics
+# Retip - Retention Time Prediction for Metabolomics
 
-Retip is a tool for predicting retention times (RTs) of small molecules for high pressure liquid chromatography (HPLC) mass spectrometry.
+**Retip** is a tool for predicting Retention Time (RT) for small molecules in a high pressure liquid chromatography (HPLC) Mass Spectrometry analysis, available as both a **Python package** and an [**R package**](https://github.com/olobion/Retip/tree/master). Retention time calculation can be useful in identifying unknowns and removing false positive annotations. It uses four different machine learning algorithms to built a stable, accurate and fast RT prediction model:
 
-Retip is a python package for predicting Retention Time (RT) for small molecules in a high pressure liquid chromatography (HPLC) Mass Spectrometry analysis. Retention time calculation can be useful in identifying unknowns and removing false positive annotations. It uses five different machine learning algorithms to built a stable, accurate and fast RT prediction model:
-
-- Random Forest: a decision tree algorithms.
-- XGBoost: an extreme Gradient Boosting for tree algorithms.
-- AutoGluon: is an automatic machine learning library.
-- H2O AutoML: is an automatic machine learning tool.
+- **Random Forest:** a decision tree algorithms.
+- **XGBoost:** an extreme Gradient Boosting for tree algorithms.
+- **AutoGluon:** is an automatic machine learning library.
+- **H2O AutoML:** is an automatic machine learning tool.
 
 ## Retip installation
 
-Retip requires Python 3.1.0 and it is recommended to use the [Anaconda](https://www.anaconda.com/download/) or [miniconda](https://conda.io/miniconda.html) environments to easily install and run the package.
+Retip 2.0 requires Python 3.1.0 and it is recommended to use the [Anaconda](https://www.anaconda.com/download/) or [miniconda](https://conda.io/miniconda.html) environments to easily install and run the package.
 
 Once Anaconda is installed, simply check out the Retip repository and create an environment named `pyretip`:
 
