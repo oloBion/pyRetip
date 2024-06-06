@@ -16,7 +16,6 @@ class Trainer:
         self.predictor = None
         self.model_columns = None
 
-
     @abc.abstractmethod
     def save_model(self, filename: str):
         pass
@@ -32,8 +31,8 @@ class Trainer:
     def train(self):
         for k, df in self.dataset.datasets.items():
             # ensure that the target column is present
-            if self.target_column not in df.columns:
-                raise Exception(f'Target column "{self.target_column}" was not found in the {k} dataset')
+            if self.dataset.target_column not in df.columns:
+                raise Exception(f'Target column "{self.dataset.target_column}" was not found in the {k} dataset')
 
         self.do_train()
 
@@ -49,11 +48,14 @@ class Trainer:
 
         if isinstance(data, Dataset):
             X = data.get_training_data()
-            return self.predictor.predict(self.filter_columns(X))
+            return self._predict(self.filter_columns(X))
         elif isinstance(data, pd.DataFrame):
-            return self.predictor.predict(self.filter_columns(data))
+            return self._predict(self.filter_columns(data))
         else:
             raise Exception(f'Unsupported data format {type(data)}')
+        
+    def _predict(self, data):
+        return self.predictor.predict(data)
 
     def score(self, data: Union[Dataset, pd.DataFrame] = None, target_column: str = None, plot: bool = None, plot_filename: str = None):
         """
@@ -61,18 +63,25 @@ class Trainer:
 
         if data is None:
             if self.dataset is not None:
-                data = self.dataset.get_testing_data()
+                data = self.dataset.get_testing_data(include_metadata=True)
+                mtdata = data["Name"]
+                data = data.drop(['Name', 'InChIKey', 'SMILES'], axis=1)
                 target_column = self.dataset.target_column
             else:
-                raise Exception('trainer has no associated dataset and so it must be provided to the score method')
+                raise Exception('Trainer has no associated dataset and so it must be provided to the score method')
         elif isinstance(data, Dataset):
-            data = data.get_data()
-            target_column = data.target_column
+            raise Exception('Please specify one dataset from the training, testing, or validation subsets of the Dataset object.')
         elif isinstance(data, pd.DataFrame):
             if target_column is None:
-                raise Exception('target column name must be provided when scoring a data frame')
+                raise Exception('Target column name must be provided when scoring a data frame')
+            for col in ['Name', 'InChIKey', 'SMILES']:
+                if col in data.columns:
+                    if col == "Name":
+                        mtdata = data["Name"]
+                    data = data.drop(col, axis=1)
+            
         else:
-            raise Exception(f'unsupported data format {type(data)}')
+            raise Exception(f'Unsupported data format {type(data)}')
 
         y = data[target_column].values
         y_pred = self.predict(data)
@@ -80,7 +89,11 @@ class Trainer:
 
         if plot:
             from .. import visualization
-            visualization.plot_rt_scatter(y, y_pred, output_filename=plot_filename)
+            if "mtdata" in locals():
+                df_pred = pd.DataFrame({"Name": mtdata, "y": y, "y_pred": y_pred})
+            else:
+                df_pred = pd.DataFrame({"y": y, "y_pred": y_pred})
+            visualization.plot_rt_scatter(df_pred, output_filename=plot_filename)
 
         epsilon = np.finfo(np.float64).eps
 
@@ -110,7 +123,7 @@ class Trainer:
             if prediction_column in df.columns:
                 raise Exception(f'{prediction_column} column already exists!')
 
-            y_pred = self.predictor.predict(self.filter_columns(df))
+            y_pred = self.predict(self.filter_columns(df))
 
             if 'SMILES' in df.columns:
                 idx = df.columns.get_loc('SMILES')

@@ -1,0 +1,8 @@
+[project]
+name = "pyRetip"
+version = "2.0"
+description = "Python library for retention time prediction for metabolomics and lipidomics"
+
+readme = "README.md"
+repository = "https://github.com/olobion/pyRetip"
+requires-python = ">=3.10"

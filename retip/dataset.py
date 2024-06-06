@@ -193,9 +193,9 @@ class Dataset:
                     except:
                         print(f'Error: descriptor calculation failed for {smi}')
                         descs.append({})
-            
-            descs = pd.DataFrame(descs)
-            descs = descs.replace({False: 0, True: 1})
+
+            with pd.option_context('future.no_silent_downcasting', True):
+                descs = pd.DataFrame(descs).replace({False: 0, True: 1})
 
             self.datasets[k] = df.join(descs)
 

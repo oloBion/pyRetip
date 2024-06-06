@@ -1,46 +1,43 @@
 import datetime
 import joblib
-import xgboost as xgb
-import pandas as pd
 import time
+import pandas as pd
 
-from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import RandomizedSearchCV
 
 from .. import Dataset
 from . import Trainer
 
 
-class XGBoostTrainer(Trainer):
-    def __init__(self, dataset: Dataset, cv: int = 10, n_cpu: int = None, n_jobs: int = -1):
+class RandomForestTrainer(Trainer):
+    def __init__(self, dataset: Dataset, cv: int = 10, n_jobs: int = -1, random_state: int = 50):
         """
         """
 
         super().__init__(dataset)
 
         self.cv = cv
-        self.n_cpu = n_cpu
         self.n_jobs = n_jobs
+        self.random_state = random_state
 
         self.parameter_space = {
-            'n_estimators': [300, 400, 500, 600, 700, 800, 1000],
-            'max_depth': [2, 3, 4, 5],
-            'learning_rate': [0.01, 0.02],
-            'gamma': [1],
-            'colsample_bytree': [0.5],
-            'subsample': [0.5],
-            'min_child_weight': [10]
+            'n_estimators': [int(x) for x in range(100, 1001, 100)],
+            'max_features': [None, 'sqrt', 'log2'],
+            'max_depth': [int(x) for x in range(10, 101, 10)] + [None],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4],
+            'bootstrap': [True, False]
         }
-
 
     def save_model(self, filename: str):
         if hasattr(self, 'predictor'):
             export = {
-                'model_name': 'XGBoost',
+                'model_name': 'RandomForest',
                 'model_columns': self.model_columns,
                 'feature_importance': self.feature_importance,
-                'predictor': self.predictor.best_estimator_
+                'predictor': self.predictor
             }
-
             joblib.dump(export, filename)
             print(f'Exported model to {filename}')
         else:
@@ -49,14 +46,13 @@ class XGBoostTrainer(Trainer):
     def load_model(self, filename: str):
         export = joblib.load(filename)
 
-        if isinstance(export, dict) and export.get('model_name') == 'XGBoost':
+        if isinstance(export, dict) and export.get('model_name') == 'RandomForest':
             self.model_columns = export['model_columns']
             self.feature_importance = export['feature_importance']
             self.predictor = export['predictor']
             print(f'Loaded {filename}')
         else:
-            raise Exception(f'{filename} is an invalid XGBoost model export')
-
+            raise Exception(f'{filename} is an invalid Random Forest model export')
 
     def do_train(self, verbosity: int = 1):
         if self.dataset is not None:
@@ -68,18 +64,22 @@ class XGBoostTrainer(Trainer):
 
             t = time.time()
 
-            self.predictor = GridSearchCV(
-                xgb.XGBRegressor(n_jobs=self.n_cpu),
-                self.parameter_space,
+            # Define the RandomizedSearchCV
+            self.predictor = RandomizedSearchCV(
+                estimator= RandomForestRegressor(),
+                param_distributions=self.parameter_space,
+                n_iter=10,
+                scoring='r2',
                 cv=self.cv,
                 verbose=verbosity,
+                random_state=self.random_state,
                 n_jobs=self.n_jobs
             ).fit(X_train, y_train)
 
             self.feature_importance = self.predictor.best_estimator_.feature_importances_
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - t))
-            print(f'Training completed in {elapsed_time} with best RMSE {self.predictor.best_score_:.3f}')
+            print(f'Training completed in {elapsed_time} with best R\U000000B2 {self.predictor.best_score_}')
         else:
             raise Exception('Trainer has no associated dataset so it can only be used to predict new retention times')
 
