@@ -46,10 +46,19 @@ class Trainer:
         """
         """
 
+        def convert_columns_to_category(df):
+            columns_to_convert = ['Lipinski', 'GhoseFilter']
+            for col in columns_to_convert:
+                if col in df.columns:
+                    df[col] = df[col].astype('category')
+            return df
+
         if isinstance(data, Dataset):
             X = data.get_training_data()
+            X = convert_columns_to_category(X)
             return self._predict(self.filter_columns(X))
         elif isinstance(data, pd.DataFrame):
+            data = convert_columns_to_category(data)
             return self._predict(self.filter_columns(data))
         else:
             raise Exception(f'Unsupported data format {type(data)}')

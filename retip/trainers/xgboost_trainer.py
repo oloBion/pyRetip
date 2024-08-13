@@ -61,6 +61,10 @@ class XGBoostTrainer(Trainer):
     def do_train(self, verbosity: int = 1):
         if self.dataset is not None:
             training_data = self.dataset.get_training_data()
+            # Convert 'Lipinski' and 'GhoseFilter' to category type
+            for col in ['Lipinski', 'GhoseFilter']:
+                if col in training_data.columns:
+                    training_data[col] = training_data[col].astype('category')
             X_train = training_data.drop(self.dataset.target_column, axis=1)
             y_train = training_data[self.dataset.target_column].values
 
@@ -69,7 +73,7 @@ class XGBoostTrainer(Trainer):
             t = time.time()
 
             self.predictor = GridSearchCV(
-                xgb.XGBRegressor(n_jobs=self.n_cpu),
+                xgb.XGBRegressor(n_jobs=self.n_cpu, enable_categorical=True),
                 self.parameter_space,
                 cv=self.cv,
                 verbose=verbosity,
