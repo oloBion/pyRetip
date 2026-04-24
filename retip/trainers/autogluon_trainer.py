@@ -15,7 +15,7 @@ from . import Trainer
 
 
 class AutoGluonTrainer(Trainer):
-    def __init__(self, dataset: Dataset = None, training_duration: int = None, preset: str = 'high_quality'):
+    def __init__(self, dataset: Dataset = None, training_duration: int = None, num_cpus: int = None, preset: str = 'best'):
         """
         """
 
@@ -25,6 +25,7 @@ class AutoGluonTrainer(Trainer):
             raise ImportError('AutoGluon is not properly installed!')
 
         self.preset = preset
+        self.num_cpus = num_cpus
 
         if training_duration is not None:
             self.training_duration = 60 * training_duration
@@ -58,6 +59,7 @@ class AutoGluonTrainer(Trainer):
             self.predictor.fit(
                 train_data=training_data,
                 time_limit=self.training_duration,
+                num_cpus=self.num_cpus,
                 presets=self.preset
             )
 
