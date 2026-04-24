@@ -98,7 +98,7 @@ class Trainer:
         epsilon = np.finfo(np.float64).eps
 
         return {
-            'root_mean_squared_error': metrics.mean_squared_error(y, y_pred, squared=False),
+            'root_mean_squared_error': metrics.root_mean_squared_error(y, y_pred),
             'mean_squared_error': metrics.mean_squared_error(y, y_pred),
             'mean_absolute_error': metrics.mean_absolute_error(y, y_pred),
             'median_absolute_error': metrics.median_absolute_error(y, y_pred),
