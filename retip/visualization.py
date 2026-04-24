@@ -61,7 +61,7 @@ def plot_rt_scatter(df, output_filename: str = None):
         """
     p.add_tools(hover)
 
-    if output_filename:
+    if output_filename is not None:
         if not output_filename.lower().endswith('.png'):
             output_filename += '.png'
         export_png(p, filename=output_filename)

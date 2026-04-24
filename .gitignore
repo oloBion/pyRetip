@@ -1,8 +1,19 @@
-__pycache__
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.python-version
+
+
 .ipynb_checkpoints
 AutogluonModels
-notebooks/lipidomics/lipidomics_c18_retip_preprocessed_testing.csv
-notebooks/lipidomics/lipidomics_c18_retip_preprocessed_training.csv
-notebooks/metabolomics/Plasma_positive_retip_processed_testing.csv
-notebooks/metabolomics/Plasma_positive_retip_processed_training.csv
-notebooks/metabolomics/Plasma_positive_retip_processed_validation.csv
+
+notebooks/*/*_processed_training.csv
+notebooks/*/*_processed_testing.csv
+notebooks/*/*_processed_validation.csv
