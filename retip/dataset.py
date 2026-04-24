@@ -99,7 +99,7 @@ class Dataset:
 
             # clean identifier columns
             for col in identifier_cols:
-                df.loc[:, col] = df[col].str.strip().replace('', np.NaN)
+                df.loc[:, col] = df[col].str.strip().replace('', np.nan)
 
             # check for missing identifiers
             missing_identifiers = df[identifier_cols].isnull().any(axis=1).sum()
